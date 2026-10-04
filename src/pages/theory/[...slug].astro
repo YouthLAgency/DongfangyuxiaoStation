@@ -1,0 +1,51 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getCollection } from 'astro:content';
+
+export async function getStaticPaths() {
+  const articles = await getCollection('articles', ({ data }) => !data.draft);
+  return articles.map((post) => ({
+    params: { slug: post.slug },
+    props: { post },
+  }));
+}
+
+const { post } = Astro.props;
+const { Content } = await post.render();
+---
+
+<BaseLayout title={post.data.title} description={post.data.description}>
+  <article class="max-w-3xl mx-auto px-4 py-12">
+    <header class="mb-8">
+      <div class="flex items-center gap-2 text-xs text-gray-500 mb-3">
+        <span class="bg-primary-light text-primary-dark px-2 py-0.5 rounded">
+          {post.data.category}
+        </span>
+        <time>{post.data.date.toLocaleDateString('zh-CN')}</time>
+        <span>· {post.data.author}</span>
+      </div>
+      <h1 class="text-3xl md:text-4xl font-bold mb-4">{post.data.title}</h1>
+      <p class="text-gray-600 text-lg">{post.data.description}</p>
+    </header>
+
+    <div class="prose-content">
+      <Content />
+    </div>
+
+    {
+      post.data.tags.length > 0 && (
+        <div class="mt-10 pt-6 border-t border-gray-200">
+          <div class="flex flex-wrap gap-2">
+            {post.data.tags.map((tag) => (
+              <span
+                class="text-xs bg-gray-100 text-gray-600 px-3 py-1 rounded-full"
+              >
+                #{tag}
+              </span>
+            ))}
+          </div>
+        </div>
+      )
+    }
+  </article>
+</BaseLayout>

@@ -1,0 +1,58 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 东方欲晓——马列毛主义通讯站 全局样式 */
+
+/* 基础排版 */
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: #faf7f2;
+  color: #1a1a1a;
+  font-family: "Noto Serif SC", "Source Han Serif SC", "Songti SC", "SimSun", serif;
+  line-height: 1.8;
+}
+
+/* 标题字体 */
+h1, h2, h3, h4, h5, h6 {
+  font-family: "ZCOOL XiaoWei", "Noto Serif SC", serif;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+/* 文章正文可读性 */
+.prose-content p {
+  margin-bottom: 1.25rem;
+  text-indent: 2em;
+}
+
+.prose-content h2 {
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+  font-size: 1.5rem;
+  border-left: 4px solid #b91c1c;
+  padding-left: 0.75rem;
+}
+
+.prose-content blockquote {
+  border-left: 4px solid #b91c1c;
+  background-color: #f0ebe1;
+  padding: 1rem 1.25rem;
+  margin: 1.5rem 0;
+  font-style: italic;
+}
+
+/* 链接样式 */
+a {
+  color: #b91c1c;
+  text-decoration: none;
+  transition: opacity 0.2s ease;
+}
+
+a:hover {
+  opacity: 0.8;
+  text-decoration: underline;
+}

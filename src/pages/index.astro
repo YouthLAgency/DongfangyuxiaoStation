@@ -1,0 +1,153 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { getCollection } from 'astro:content';
+
+const articles = (await getCollection('articles', ({ data }) => !data.draft))
+  .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf())
+  .slice(0, 6);
+
+const siteTitle = '东方欲晓——马列毛主义通讯站';
+const description =
+  '青联社官方网站，左翼青年入门指南、理论资源、文艺作品与刊物阅读的集散地。';
+
+const sections = [
+  {
+    title: '入门指南',
+    desc: '从零开始了解马列毛主义，适合初学者的阅读路径与核心概念。',
+    href: '/guide/',
+    icon: '📖',
+  },
+  {
+    title: '理论中心',
+    desc: '经典著作导读、当代理论文章、概念词典，构建扎实的理论根基。',
+    href: '/theory/',
+    icon: '⚑',
+  },
+  {
+    title: '文艺阵地',
+    desc: '诗歌、散文、小说、评论与美术——左翼青年的创作家园。',
+    href: '/art/',
+    icon: '✎',
+  },
+  {
+    title: '刊物阅读',
+    desc: '《真理周刊》等电子刊物，记录我们的思考与实践。',
+    href: '/journal/',
+    icon: '📰',
+  },
+  {
+    title: '工具导航',
+    desc: '学习工具、资料库、在线辞典与协作平台推荐。',
+    href: '/tools/',
+    icon: '🧰',
+  },
+  {
+    title: '联络投稿',
+    desc: '向本站投稿、提出建议或加入青联社技术组。',
+    href: '/contact/',
+    icon: '✉',
+  },
+];
+---
+
+<BaseLayout title={siteTitle} description={description}>
+  <!-- Hero 区域 -->
+  <section class="bg-gradient-to-br from-primary-dark to-primary text-white">
+    <div class="max-w-6xl mx-auto px-4 py-20 text-center">
+      <p class="text-sm tracking-[0.3em] uppercase mb-4 text-red-200">
+        Dongfang Yuxiao · Marxist-Leninist-Maoist
+      </p>
+      <h1 class="text-4xl md:text-6xl font-bold mb-6">东方欲晓</h1>
+      <p class="text-xl md:text-2xl mb-4 text-red-50">
+        莫道君行早，踏遍青山人未老，风景这边独好。
+      </p>
+      <p class="max-w-2xl mx-auto text-red-100 leading-relaxed">
+        马列毛主义通讯站——为困惑中的青年点亮一盏灯，<br class="hidden md:block" />
+        为左翼学习者提供理论资源与交流阵地。
+      </p>
+      <div class="mt-10 flex flex-wrap justify-center gap-4">
+        <a
+          href="/guide/"
+          class="bg-white text-primary-dark px-8 py-3 rounded font-bold hover:bg-red-50 transition-colors hover:no-underline"
+        >
+          从入门指南开始 →
+        </a>
+        <a
+          href="/about/"
+          class="border-2 border-white text-white px-8 py-3 rounded font-bold hover:bg-white/10 transition-colors hover:no-underline"
+        >
+          了解本站
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 核心板块入口 -->
+  <section class="max-w-6xl mx-auto px-4 py-16">
+    <h2 class="text-3xl font-bold text-center mb-3">核心板块</h2>
+    <p class="text-center text-gray-600 mb-10">六大功能，覆盖学习、创作、交流全流程</p>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {
+        sections.map((s) => (
+          <a
+            href={s.href}
+            class="block bg-white rounded-lg shadow hover:shadow-lg transition-shadow p-6 border border-gray-100 hover:border-primary hover:no-underline"
+          >
+            <div class="text-3xl mb-3">{s.icon}</div>
+            <h3 class="text-xl font-bold mb-2 text-ink">{s.title}</h3>
+            <p class="text-gray-600 text-sm leading-relaxed">{s.desc}</p>
+          </a>
+        ))
+      }
+    </div>
+  </section>
+
+  <!-- 最新文章 -->
+  <section class="bg-paper-dark py-16">
+    <div class="max-w-6xl mx-auto px-4">
+      <div class="flex items-center justify-between mb-8">
+        <h2 class="text-3xl font-bold">最新理论文章</h2>
+        <a href="/theory/" class="text-primary font-semibold">
+          查看全部 →
+        </a>
+      </div>
+
+      {
+        articles.length > 0 ? (
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {articles.map((post) => (
+              <a
+                href={`/theory/${post.slug}/`}
+                class="block bg-white rounded-lg shadow hover:shadow-lg transition-shadow p-6 hover:no-underline"
+              >
+                <div class="flex items-center gap-2 text-xs text-gray-500 mb-2">
+                  <span class="bg-primary-light text-primary-dark px-2 py-0.5 rounded">
+                    {post.data.category}
+                  </span>
+                  <time>{post.data.date.toLocaleDateString('zh-CN')}</time>
+                </div>
+                <h3 class="text-lg font-bold mb-2 text-ink">
+                  {post.data.title}
+                </h3>
+                <p class="text-gray-600 text-sm line-clamp-3">{post.data.description}</p>
+              </a>
+            ))}
+          </div>
+        ) : (
+          <div class="bg-white rounded-lg shadow p-12 text-center text-gray-500">
+            <p class="text-lg mb-2">暂无文章</p>
+            <p class="text-sm">理论文章正在陆续整理中，敬请期待。</p>
+          </div>
+        )
+      }
+    </div>
+  </section>
+
+  <!-- 号召语 -->
+  <section class="max-w-4xl mx-auto px-4 py-16 text-center">
+    <blockquote class="text-2xl md:text-3xl font-display italic text-primary-dark leading-relaxed">
+      “世界是你们的，也是我们的，但是归根结底是你们的。”
+    </blockquote>
+    <p class="mt-4 text-gray-600">——青年是整个社会力量中最积极、最有生气的力量。</p>
+  </section>
+</BaseLayout>

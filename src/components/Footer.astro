@@ -1,0 +1,44 @@
+---
+const year = new Date().getFullYear();
+---
+
+<footer class="bg-ink text-gray-300 mt-16">
+  <div class="max-w-6xl mx-auto px-4 py-10">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <!-- 站点信息 -->
+      <div>
+        <h3 class="text-white text-lg font-bold mb-3 flex items-center gap-2">
+          <span aria-hidden="true">★</span> 东方欲晓
+        </h3>
+        <p class="text-sm leading-relaxed">
+          马列毛主义通讯站。为困惑中的青年点亮一盏灯，为左翼学习者提供理论资源与交流阵地。
+        </p>
+      </div>
+
+      <!-- 快速导航 -->
+      <div>
+        <h3 class="text-white text-lg font-bold mb-3">快速导航</h3>
+        <ul class="space-y-2 text-sm">
+          <li><a href="/guide/" class="hover:text-white">入门指南</a></li>
+          <li><a href="/theory/" class="hover:text-white">理论中心</a></li>
+          <li><a href="/art/" class="hover:text-white">文艺阵地</a></li>
+          <li><a href="/journal/" class="hover:text-white">刊物</a></li>
+        </ul>
+      </div>
+
+      <!-- 联络 -->
+      <div>
+        <h3 class="text-white text-lg font-bold mb-3">联络站</h3>
+        <p class="text-sm leading-relaxed">
+          投稿与合作请通过联络页面提交。<br />
+          本站内容遵循创作共用协议（CC BY-NC-SA）。
+        </p>
+      </div>
+    </div>
+
+    <div class="border-t border-gray-700 mt-8 pt-6 text-center text-xs text-gray-500">
+      <p>© {year} 东方欲晓——马列毛主义通讯站 · 青联社技术组维护</p>
+      <p class="mt-1">本站仅发布公开级内容，不涉及组织内部信息。</p>
+    </div>
+  </div>
+</footer>

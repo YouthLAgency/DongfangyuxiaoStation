@@ -1,0 +1,41 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getCollection } from 'astro:content';
+
+const articles = (await getCollection('articles', ({ data }) => !data.draft)).sort(
+  (a, b) => b.data.date.valueOf() - a.data.date.valueOf()
+);
+---
+
+<BaseLayout title="理论中心" description="经典著作导读、当代理论文章与概念词典。">
+  <section class="max-w-6xl mx-auto px-4 py-12">
+    <h1 class="text-4xl font-bold mb-6">理论中心</h1>
+    <p class="text-gray-600 mb-10">理论文章正在陆续整理发布。</p>
+
+    {
+      articles.length > 0 ? (
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {articles.map((post) => (
+            <a
+              href={`/theory/${post.slug}/`}
+              class="block bg-white rounded-lg shadow hover:shadow-lg transition-shadow p-6 hover:no-underline"
+            >
+              <div class="flex items-center gap-2 text-xs text-gray-500 mb-2">
+                <span class="bg-primary-light text-primary-dark px-2 py-0.5 rounded">
+                  {post.data.category}
+                </span>
+                <time>{post.data.date.toLocaleDateString('zh-CN')}</time>
+              </div>
+              <h2 class="text-lg font-bold mb-2 text-ink">
+                {post.data.title}
+              </h2>
+              <p class="text-gray-600 text-sm line-clamp-3">{post.data.description}</p>
+            </a>
+          ))}
+        </div>
+      ) : (
+        <p class="text-gray-500">暂无文章。</p>
+      )
+    }
+  </section>
+</BaseLayout>
