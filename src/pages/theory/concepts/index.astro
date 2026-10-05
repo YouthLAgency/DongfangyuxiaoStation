@@ -1,0 +1,55 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getCollection } from 'astro:content';
+
+const concepts = (await getCollection('concepts', ({ data }) => !data.draft)).sort((a, b) =>
+  a.data.term.localeCompare(b.data.term, 'zh-CN')
+);
+
+const grouped: Record<string, typeof concepts> = {};
+for (const c of concepts) {
+  const cat = c.data.category;
+  if (!grouped[cat]) grouped[cat] = [];
+  grouped[cat].push(c);
+}
+
+const categoryOrder = ['哲学', '政治经济学', '科学社会主义', '党史', '人物'];
+const sortedCategories = Object.keys(grouped).sort(
+  (a, b) => categoryOrder.indexOf(a) - categoryOrder.indexOf(b)
+);
+---
+
+<BaseLayout title="概念词典 · 理论图书馆" description="马克思主义基本概念词典。">
+  <section class="max-w-content mx-auto px-4 py-12">
+    <header class="mb-10">
+      <p class="text-sm text-gray-500 mb-2">
+        <a href="/theory/" class="hover:underline">理论图书馆</a> / 概念词典
+      </p>
+      <h1 class="text-4xl font-bold mb-3">概念词典</h1>
+      <p class="text-gray-600">马克思主义基本概念简明词典，按学科分类。</p>
+    </header>
+
+    <div class="space-y-12">
+      {
+        sortedCategories.map((cat) => (
+          <section>
+            <h2 class="text-2xl font-bold mb-4 border-l-4 border-primary pl-3">{cat}</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {grouped[cat].map((c) => (
+                <article class="bg-white rounded-lg shadow p-5 hover:shadow-md transition-shadow">
+                  <h3 class="text-lg font-bold text-ink mb-1">{c.data.term}</h3>
+                  <p class="text-sm text-gray-600 line-clamp-2 mb-3">{c.data.description}</p>
+                  <div class="flex flex-wrap gap-1">
+                    {c.data.tags.slice(0, 3).map((t) => (
+                      <span class="text-xs text-gray-400">#{t}</span>
+                    ))}
+                  </div>
+                </article>
+              ))}
+            </div>
+          </section>
+        ))
+      }
+    </div>
+  </section>
+</BaseLayout>

@@ -1,0 +1,34 @@
+---
+import BaseLayout from './BaseLayout.astro';
+
+interface Props {
+  title: string;
+  description?: string;
+  /** 顶部副标题/引语 */
+  subtitle?: string;
+  /** 是否显示毛笔装饰横线 */
+  decorated?: boolean;
+}
+
+const { title, description, subtitle, decorated = true } = Astro.props;
+---
+
+<BaseLayout title={title} description={description}>
+  <div class="max-w-3xl mx-auto px-4 py-12">
+    <header class="mb-10 text-center">
+      <h1 class="text-4xl md:text-5xl font-bold mb-3 text-ink">{title}</h1>
+      {decorated && (
+        <div class="flex items-center justify-center gap-2 my-4">
+          <span class="h-px w-12 bg-gold"></span>
+          <span class="text-gold text-xl">★</span>
+          <span class="h-px w-12 bg-gold"></span>
+        </div>
+      )}
+      {subtitle && <p class="text-lg text-gray-600 leading-relaxed">{subtitle}</p>}
+    </header>
+
+    <div class="prose-content">
+      <slot />
+    </div>
+  </div>
+</BaseLayout>

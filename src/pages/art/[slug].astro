@@ -1,0 +1,66 @@
+---
+import ReaderLayout from '../../layouts/ReaderLayout.astro';
+import { getCollection } from 'astro:content';
+
+export async function getStaticPaths() {
+  const arts = await getCollection('art', ({ data }) => !data.draft);
+  return arts.map((post) => ({
+    params: { slug: post.slug },
+    props: { post },
+  }));
+}
+
+const { post } = Astro.props;
+const { Content, headings } = await post.render();
+
+const toc = headings
+  .filter((h) => h.depth === 2 || h.depth === 3)
+  .map((h) => ({ text: h.text, depth: h.depth, slug: h.slug }));
+---
+
+<ReaderLayout
+  title={post.data.title}
+  description={post.data.description}
+  sidebarTitle="本页目录"
+  toc={toc}
+  meta={[
+    { label: '作者', value: post.data.author },
+    { label: '类型', value: post.data.type },
+    {
+      label: '日期',
+      value: post.data.date.toLocaleDateString('zh-CN'),
+    },
+  ]}
+  footer={
+    <>
+      {post.data.bilibili && (
+        <div class="mb-6">
+          <h3 class="text-sm font-bold text-ink mb-2">Bilibili 视频</h3>
+          <div class="aspect-video bg-paper-dark rounded-lg overflow-hidden">
+            <iframe
+              src={`//player.bilibili.com/player.html?bvid=${post.data.bilibili}&page=1`}
+              scrolling="no"
+              border="0"
+              frameborder="no"
+              framespacing="0"
+              allowfullscreen="true"
+              class="w-full h-full"
+              loading="lazy"
+            />
+          </div>
+        </div>
+      )}
+      {post.data.tags.length > 0 ? (
+        <div class="flex flex-wrap gap-2">
+          {post.data.tags.map((tag: string) => (
+            <span class="text-xs bg-gray-100 text-gray-600 px-3 py-1 rounded-full">
+              #{tag}
+            </span>
+          ))}
+        </div>
+      ) : null}
+    </>
+  }
+>
+  <Content />
+</ReaderLayout>

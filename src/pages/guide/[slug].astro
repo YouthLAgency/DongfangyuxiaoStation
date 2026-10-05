@@ -3,8 +3,8 @@ import ReaderLayout from '../../layouts/ReaderLayout.astro';
 import { getCollection } from 'astro:content';
 
 export async function getStaticPaths() {
-  const articles = await getCollection('articles', ({ data }) => !data.draft);
-  return articles.map((post) => ({
+  const guides = await getCollection('guide', ({ data }) => !data.draft);
+  return guides.map((post) => ({
     params: { slug: post.slug },
     props: { post },
   }));
@@ -25,23 +25,30 @@ const toc = headings
   toc={toc}
   meta={[
     { label: '作者', value: post.data.author },
-    { label: '分类', value: post.data.category },
-    { label: '来源', value: post.data.source },
+    { label: '类型', value: post.data.type },
     {
       label: '日期',
       value: post.data.date.toLocaleDateString('zh-CN'),
     },
   ]}
   footer={
-    post.data.tags.length > 0 ? (
-      <div class="flex flex-wrap gap-2">
-        {post.data.tags.map((tag: string) => (
-          <span class="text-xs bg-gray-100 text-gray-600 px-3 py-1 rounded-full">
-            #{tag}
-          </span>
-        ))}
-      </div>
-    ) : null
+    <>
+      <a
+        href="/guide/"
+        class="inline-block text-sm text-primary hover:opacity-80"
+      >
+        ← 返回入门指南
+      </a>
+      {post.data.tags.length > 0 ? (
+        <div class="mt-4 flex flex-wrap gap-2">
+          {post.data.tags.map((tag: string) => (
+            <span class="text-xs bg-gray-100 text-gray-600 px-3 py-1 rounded-full">
+              #{tag}
+            </span>
+          ))}
+        </div>
+      ) : null}
+    </>
   }
 >
   <Content />

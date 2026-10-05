@@ -1,57 +1,91 @@
 ---
+// ★主要模块：期刊通讯、联络站——置顶+金黄背景
+// 其余模块：入门指南、理论图书馆、文艺阵地、左翼工具箱、关于
+const starItems = [
+  { label: '★ 期刊通讯', href: '/journal/' },
+  { label: '★ 联络站', href: '/contact/' },
+];
+
 const navItems = [
   { label: '首页', href: '/' },
   { label: '入门指南', href: '/guide/' },
-  { label: '理论中心', href: '/theory/' },
+  { label: '理论图书馆', href: '/theory/' },
   { label: '文艺阵地', href: '/art/' },
-  { label: '刊物', href: '/journal/' },
-  { label: '工具导航', href: '/tools/' },
+  { label: '左翼工具箱', href: '/tools/' },
   { label: '关于', href: '/about/' },
-  { label: '联络站', href: '/contact/' },
 ];
+
 const currentPath = Astro.url.pathname;
+const isActive = (href: string) =>
+  href === '/' ? currentPath === '/' : currentPath.startsWith(href);
 ---
 
-<header class="bg-primary-dark text-white sticky top-0 z-50 shadow-md">
-  <div class="max-w-6xl mx-auto px-4">
+<header class="bg-primary text-white sticky top-0 z-50 shadow-md">
+  <div class="max-w-content mx-auto px-4">
     <div class="flex items-center justify-between h-16">
       <a href="/" class="flex items-center gap-2 hover:no-underline text-white">
-        <span class="text-2xl" aria-hidden="true">★</span>
+        <span class="text-2xl text-gold" aria-hidden="true">★</span>
         <span class="text-xl font-bold tracking-wide">东方欲晓</span>
       </a>
 
       <!-- 桌面导航 -->
       <nav class="hidden md:flex items-center gap-1">
         {
-          navItems.map((item) => {
-            const isActive =
-              item.href === '/'
-                ? currentPath === '/'
-                : currentPath.startsWith(item.href);
-            return (
+          /* ★主模块置顶（金黄背景） */
+          starItems.map((item) => (
+            <a
+              href={item.href}
+              class:list={[
+                'nav-star px-3 py-2 rounded text-sm font-bold transition-colors hover:no-underline',
+                isActive(item.href) && 'ring-2 ring-white',
+              ]}
+            >
+              {item.label}
+            </a>
+          ))
+        }
+        <span class="text-white/40 mx-1">|</span>
+        {
+          navItems.map((item) => (
+            <a
+              href={item.href}
+              class:list={[
+                'px-3 py-2 rounded text-sm hover:bg-white/10 transition-colors text-white hover:no-underline',
+                isActive(item.href) && 'bg-white/15 font-semibold',
+              ]}
+            >
+              {item.label}
+            </a>
+          ))
+        }
+      </nav>
+
+      <!-- 移动端菜单 -->
+      <details class="md:hidden relative">
+        <summary class="list-none cursor-pointer p-2 text-2xl">☰</summary>
+        <nav class="absolute right-0 top-full mt-1 bg-primary shadow-lg rounded-bl-lg min-w-[180px] py-2">
+          {
+            starItems.map((item) => (
               <a
                 href={item.href}
                 class:list={[
-                  'px-3 py-2 rounded text-sm hover:bg-white/10 transition-colors text-white',
-                  isActive && 'bg-white/15 font-semibold',
+                  'block px-4 py-2 text-sm font-bold text-ink',
+                  isActive(item.href) ? 'bg-gold-light' : 'bg-gold hover:bg-gold-light',
                 ]}
               >
                 {item.label}
               </a>
-            );
-          })
-        }
-      </nav>
-
-      <!-- 移动端菜单按钮 -->
-      <details class="md:hidden relative">
-        <summary class="list-none cursor-pointer p-2 text-2xl">☰</summary>
-        <nav class="absolute right-0 top-full mt-1 bg-primary-dark shadow-lg rounded-bl-lg min-w-[160px] py-2">
+            ))
+          }
+          <div class="border-t border-white/20 my-1"></div>
           {
             navItems.map((item) => (
               <a
                 href={item.href}
-                class="block px-4 py-2 text-sm hover:bg-white/10 text-white"
+                class:list={[
+                  'block px-4 py-2 text-sm hover:bg-white/10 text-white',
+                  isActive(item.href) && 'bg-white/15 font-semibold',
+                ]}
               >
                 {item.label}
               </a>

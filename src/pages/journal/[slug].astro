@@ -1,0 +1,67 @@
+---
+import ReaderLayout from '../../layouts/ReaderLayout.astro';
+import { getCollection } from 'astro:content';
+
+export async function getStaticPaths() {
+  const journals = await getCollection('journals', ({ data }) => !data.draft);
+  return journals.map((post) => ({
+    params: { slug: post.slug },
+    props: { post },
+  }));
+}
+
+const { post } = Astro.props;
+const { Content, headings } = await post.render();
+
+const toc = headings
+  .filter((h) => h.depth === 2 || h.depth === 3)
+  .map((h) => ({ text: h.text, depth: h.depth, slug: h.slug }));
+---
+
+<ReaderLayout
+  title={post.data.title}
+  description={post.data.description}
+  sidebarTitle="本刊目录"
+  toc={toc}
+  meta={[
+    { label: '期号', value: post.data.issue },
+    { label: '类型', value: post.data.type },
+    {
+      label: '出版日期',
+      value: post.data.date.toLocaleDateString('zh-CN'),
+    },
+  ]}
+  footer={
+    <>
+      <div class="flex flex-wrap gap-3">
+        {post.data.downloadUrl && (
+          <a
+            href={post.data.downloadUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="inline-flex items-center gap-1 px-4 py-2 bg-primary text-white rounded hover:opacity-90 hover:no-underline text-sm"
+          >
+            ⬇ PDF 下载（外链）
+          </a>
+        )}
+        <a
+          href="/journal/"
+          class="inline-flex items-center gap-1 px-4 py-2 border border-gray-300 text-ink rounded hover:bg-paper-dark text-sm hover:no-underline"
+        >
+          ← 返回刊物列表
+        </a>
+      </div>
+      {post.data.tags.length > 0 ? (
+        <div class="mt-4 flex flex-wrap gap-2">
+          {post.data.tags.map((tag: string) => (
+            <span class="text-xs bg-gray-100 text-gray-600 px-3 py-1 rounded-full">
+              #{tag}
+            </span>
+          ))}
+        </div>
+      ) : null}
+    </>
+  }
+>
+  <Content />
+</ReaderLayout>

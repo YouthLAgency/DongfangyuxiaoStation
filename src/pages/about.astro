@@ -1,29 +1,66 @@
 ---
-import BaseLayout from '../layouts/BaseLayout.astro';
+import BulletinLayout from '../layouts/BulletinLayout.astro';
 ---
 
-<BaseLayout title="关于本站" description="了解东方欲晓——马列毛主义通讯站的定位、目标与运营团队。">
-  <section class="max-w-3xl mx-auto px-4 py-12">
-    <h1 class="text-4xl font-bold mb-6">关于本站</h1>
-    <div class="prose-content">
-      <p>
-        <strong>东方欲晓——马列毛主义通讯站</strong>
-        是青联社的官方网站，也是面向左翼青年的学习、创作与交流平台。
-      </p>
-      <p>
-        我们的定位是：左翼青年入门指南 + 理论文艺展板 + 资源集散地。希望为对现状有困惑的青年、左翼学习者、创作者和通讯员，提供一个可靠的公开阵地。
-      </p>
-      <h2>我们做什么</h2>
-      <ul>
-        <li>整理与发布马列毛主义入门与理论文章</li>
-        <li>刊载左翼青年的文艺作品</li>
-        <li>编发电子刊物</li>
-        <li>维护学习工具与资料库导航</li>
-      </ul>
-      <h2>内容分级</h2>
-      <p>本站仅发布 L0–L1 级（公开、非敏感）内容。涉及组织内部信息的内容不通过本站发布。</p>
-      <h2>技术与运营</h2>
-      <p>本站由青联社技术组维护，基于 Astro 构建，部署于 Cloudflare Pages。</p>
-    </div>
-  </section>
-</BaseLayout>
+<BulletinLayout
+  title="关于本站"
+  description="了解东方欲晓——马列毛主义通讯站的定位、目标与运营团队。"
+  subtitle="青联社官方公开阵地 · 仅发布 L0–L1 级内容"
+>
+  <p>
+    <strong>东方欲晓——马列毛主义通讯站</strong>
+    是青联社的官方网站，也是面向左翼青年的学习、创作与交流平台。
+  </p>
+
+  <p>
+    我们的定位是：左翼青年入门指南 + 理论文艺展板 + 资源集散地。希望为对现状有困惑的青年、左翼学习者、创作者和通讯员，提供一个可靠的公开阵地。
+  </p>
+
+  <h2>我们做什么</h2>
+  <ul>
+    <li>整理与发布马列毛主义入门与理论文章</li>
+    <li>刊载左翼青年的文艺作品</li>
+    <li>编发电子刊物《真理周刊》</li>
+    <li>维护左翼学习工具与资料库导航</li>
+  </ul>
+
+  <h2>我们的立场</h2>
+  <p>
+    我们认同<strong>马克思主义—列宁主义—毛泽东思想</strong>构成一个有机的、发展的整体。
+    我们不把任何阶段的著作当教条，但也不接受"放弃立场"的所谓创新。
+  </p>
+  <p>
+    通讯站坚持<strong>公开原则</strong>：所有内容公开、免费、可批评、可讨论。我们欢迎不同观点的左翼同志来稿讨论，但拒绝与法西斯、自由主义、改良主义混为一谈。
+  </p>
+
+  <h2>内容分级</h2>
+  <p>本站仅发布 <strong>L0–L1 级</strong>（公开、非敏感）内容。涉及组织内部信息的内容不通过本站发布。</p>
+  <ul>
+    <li><strong>L0</strong>：完全公开，可被搜索引擎收录</li>
+    <li><strong>L1</strong>：公开但建议不广泛传播（如内部学习材料）</li>
+    <li><strong>L2+</strong>：组织内部信息，<strong>不在本站发布</strong></li>
+  </ul>
+
+  <h2>技术与运营</h2>
+  <p>
+    本站由<strong>青联社技术组</strong>维护，基于 Astro 构建，部署于 Cloudflare Pages。
+    所有内容开源托管于私有 GitHub 仓库，遵循创作共用协议（CC BY-NC-SA 4.0）。
+  </p>
+  <p>
+    技术栈：Astro 4.x + Tailwind CSS 3.x + MDX + Pagefind 静态搜索 + RSS + Sitemap。
+  </p>
+
+  <h2>如何参与</h2>
+  <ul>
+    <li>读者：阅读、订阅、来信讨论</li>
+    <li>作者：投稿《真理周刊》或各板块稿件（详见<a href="/contact/">联络站</a>）</li>
+    <li>通讯员：每月稳定供稿，加入通讯站（详见<a href="/guide/recruitment/">招募页</a>）</li>
+    <li>技术组：参与网站开发维护</li>
+  </ul>
+
+  <h2>声明</h2>
+  <p>
+    本站内容遵循中国法律法规，所有文章仅作学术与思想交流，不构成任何行动号召。
+    若有版权问题，请联系编辑部，我们将在 7 日内处理。
+  </p>
+</BulletinLayout>

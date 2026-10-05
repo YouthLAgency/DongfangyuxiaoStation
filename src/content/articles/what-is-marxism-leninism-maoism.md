@@ -3,7 +3,8 @@ title: 什么是马列毛主义？
 description: 用最通俗的语言，向初学者介绍马列毛主义的基本内涵与三个组成部分。
 author: 青联社
 date: 2026-10-01
-category: 入门
+category: 专题文章
+source: 原创
 tags:
   - 入门
   - 马克思主义

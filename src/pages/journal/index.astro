@@ -1,14 +1,117 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getCollection } from 'astro:content';
+
+const journals = (await getCollection('journals', ({ data }) => !data.draft)).sort(
+  (a, b) => b.data.date.valueOf() - a.data.date.valueOf()
+);
+
+const latest = journals[0];
+const others = journals.slice(1);
 ---
 
-<BaseLayout title="刊物" description="《真理周刊》等电子刊物，记录我们的思考与实践。">
-  <section class="max-w-3xl mx-auto px-4 py-12">
-    <h1 class="text-4xl font-bold mb-6">刊物</h1>
-    <p class="text-gray-600 mb-8">电子刊物阅读板块，建设中。</p>
-    <div class="bg-white rounded-lg shadow p-8 text-center text-gray-500">
-      <p class="text-lg mb-2">🚧 建设中</p>
-      <p class="text-sm">本板块将在第三阶段完成，首期刊物正在筹备中。</p>
+<BaseLayout title="★ 期刊通讯" description="《真理周刊》等电子刊物——网上阅读、PDF 下载、订阅与征稿。">
+  <section class="bg-gold bg-opacity-20 border-y border-gold">
+    <div class="max-w-content mx-auto px-4 py-10">
+      <div class="flex items-center gap-2 text-sm text-gold-dark font-bold mb-2">
+        <span>★</span><span>主要模块</span>
+      </div>
+      <h1 class="text-4xl font-bold mb-3">期刊通讯</h1>
+      <p class="text-gray-700 max-w-2xl">
+        《真理周刊》《文艺报》等电子刊物——网上阅读、PDF 下载（外链）、邮件订阅与征稿通道。
+      </p>
+    </div>
+  </section>
+
+  <section class="max-w-content mx-auto px-4 py-12">
+    {/* 本期 */}
+    {latest && (
+      <div class="mb-12">
+        <div class="flex items-center gap-2 mb-4">
+          <span class="bg-primary text-white text-xs px-2 py-1 rounded">最新一期</span>
+          <span class="text-sm text-gray-500">{latest.data.type} · {latest.data.issue}</span>
+        </div>
+        <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+          <div class="grid grid-cols-1 md:grid-cols-3">
+            <div class="bg-gradient-to-br from-primary to-primary-dark text-white p-8 flex items-center justify-center">
+              <div class="text-center">
+                <p class="text-xs tracking-widest mb-2">DONGFANG YUXIAO</p>
+                <p class="text-2xl font-bold mb-1">真理周刊</p>
+                <p class="text-sm text-red-100">{latest.data.issue}</p>
+                <div class="mt-4 h-px w-12 bg-gold mx-auto"></div>
+                <p class="mt-4 text-xs text-red-100">{latest.data.date.toLocaleDateString('zh-CN')}</p>
+              </div>
+            </div>
+            <div class="md:col-span-2 p-8">
+              <h2 class="text-2xl font-bold mb-3 text-ink">{latest.data.title}</h2>
+              <p class="text-gray-600 leading-relaxed mb-6">{latest.data.description}</p>
+              <div class="flex flex-wrap gap-3">
+                <a
+                  href={`/journal/${latest.slug}/`}
+                  class="inline-block px-5 py-2 bg-primary text-white rounded hover:opacity-90 hover:no-underline text-sm"
+                >
+                  在线阅读 →
+                </a>
+                {latest.data.downloadUrl && (
+                  <a
+                    href={latest.data.downloadUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="inline-block px-5 py-2 border border-gray-300 text-ink rounded hover:bg-paper-dark hover:no-underline text-sm"
+                  >
+                    ⬇ PDF 下载
+                  </a>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* 过往期刊 */}
+    {others.length > 0 && (
+      <div class="mb-12">
+        <h2 class="text-2xl font-bold mb-4 border-l-4 border-gold pl-3">过往期刊</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {others.map((post) => (
+            <a
+              href={`/journal/${post.slug}/`}
+              class="block bg-white rounded-lg shadow hover:shadow-lg transition-shadow p-6 hover:no-underline"
+            >
+              <div class="flex items-center gap-2 text-xs text-gray-500 mb-2">
+                <span class="bg-gold-light text-ink px-2 py-0.5 rounded">{post.data.type}</span>
+                <time>{post.data.date.toLocaleDateString('zh-CN')}</time>
+              </div>
+              <h3 class="text-lg font-bold mb-1 text-ink">{post.data.title}</h3>
+              <p class="text-xs text-gray-400 mb-2">{post.data.issue}</p>
+              <p class="text-gray-600 text-sm line-clamp-2">{post.data.description}</p>
+            </a>
+          ))}
+        </div>
+      </div>
+    )}
+
+    {/* 订阅与征稿 */}
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-12">
+      <div class="bg-paper-dark rounded-lg p-6">
+        <h3 class="text-lg font-bold mb-3 text-ink">📡 订阅通道</h3>
+        <ul class="text-sm text-gray-600 space-y-2">
+          <li>邮件订阅：发送至 <code class="bg-white px-2 py-0.5 rounded text-xs">contact@dongfangyuxiao.example.com</code>，标题"订阅周刊"</li>
+          <li>RSS 订阅：<a href="/rss.xml" class="text-primary hover:underline">/rss.xml</a></li>
+          <li>Telegram 频道：<code class="bg-white px-2 py-0.5 rounded text-xs">@dongfangyuxiao</code></li>
+        </ul>
+      </div>
+      <div class="bg-paper-dark rounded-lg p-6">
+        <h3 class="text-lg font-bold mb-3 text-ink">✍ 征稿通道</h3>
+        <ul class="text-sm text-gray-600 space-y-2">
+          <li>理论稿件：3000-8000 字</li>
+          <li>文艺稿件：诗歌、散文、小说、评论不限</li>
+          <li>截稿：每周三 24:00</li>
+          <li>投稿邮箱：<code class="bg-white px-2 py-0.5 rounded text-xs">contact@dongfangyuxiao.example.com</code></li>
+        </ul>
+        <a href="/contact/" class="mt-3 inline-block text-sm text-primary hover:underline">查看完整征稿说明 →</a>
+      </div>
     </div>
   </section>
 </BaseLayout>

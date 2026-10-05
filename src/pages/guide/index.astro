@@ -1,14 +1,118 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getCollection } from 'astro:content';
+
+const guides = (await getCollection('guide', ({ data }) => !data.draft)).sort(
+  (a, b) => a.data.order - b.data.order
+);
+
+const introCards = [
+  {
+    title: '马列毛主义介绍',
+    desc: '什么是马克思主义？三个组成部分与从马克思到毛泽东的发展脉络。',
+    href: '/theory/what-is-marxism-leninism-maoism/',
+    icon: '⚑',
+  },
+  {
+    title: '基本常识',
+    desc: '30 个高频术语的简明解释，为初学者扫清概念障碍。',
+    href: '/guide/basic-concepts/',
+    icon: '📚',
+  },
+  {
+    title: '推荐书单',
+    desc: '从入门到精读的书单推荐，含三阶段阅读地图。',
+    href: '/guide/recommended-books/',
+    icon: '📖',
+  },
+  {
+    title: '社员招募',
+    desc: '通讯站长期招募社员与通讯员，欢迎认同马列毛主义的青年同志加入。',
+    href: '/guide/recruitment/',
+    icon: '✉',
+  },
+];
+
+const aboutItems = [
+  { label: '了解本站', href: '/about/', desc: '通讯站的定位、目标与运营团队。' },
+  { label: '联络投稿', href: '/contact/', desc: '投稿、建议与加入青联社技术组。' },
+];
 ---
 
-<BaseLayout title="入门指南" description="从零开始了解马列毛主义的阅读路径与核心概念。">
-  <section class="max-w-3xl mx-auto px-4 py-12">
-    <h1 class="text-4xl font-bold mb-6">入门指南</h1>
-    <p class="text-gray-600 mb-8">系统的阅读路径正在编写中，敬请期待。</p>
-    <div class="bg-white rounded-lg shadow p-8 text-center text-gray-500">
-      <p class="text-lg mb-2">🚧 建设中</p>
-      <p class="text-sm">本板块将在第二阶段完成，包含入门阅读路径、核心概念词典等内容。</p>
+<BaseLayout title="入门指南" description="从零开始了解马列毛主义——阅读路径、概念入门、推荐书单与社员招募。">
+  <section class="max-w-content mx-auto px-4 py-12">
+    <header class="mb-10">
+      <h1 class="text-4xl font-bold mb-3">入门指南</h1>
+      <p class="text-gray-600">
+        如果你刚接触马列毛主义，不知道从何读起、如何读起——这一页就是为你准备的。
+      </p>
+    </header>
+
+    <!-- 4 大入口卡片 -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
+      {
+        introCards.map((c) => (
+          <a
+            href={c.href}
+            class="block bg-white rounded-lg shadow hover:shadow-lg transition-shadow p-6 border border-gray-100 hover:border-primary hover:no-underline"
+          >
+            <div class="text-3xl mb-3">{c.icon}</div>
+            <h2 class="text-xl font-bold mb-2 text-ink">{c.title}</h2>
+            <p class="text-gray-600 text-sm leading-relaxed">{c.desc}</p>
+          </a>
+        ))
+      }
+    </div>
+
+    <!-- 阅读路径详情 -->
+    <h2 class="text-2xl font-bold mb-6 border-l-4 border-primary pl-3">系统阅读路径</h2>
+    {
+      guides.length > 0 ? (
+        <div class="space-y-4">
+          {guides.map((g, idx) => (
+            <a
+              href={`/guide/${g.slug}/`}
+              class="block bg-white rounded-lg shadow hover:shadow-md transition-shadow p-5 hover:no-underline"
+            >
+              <div class="flex items-start gap-4">
+                <span class="text-2xl font-bold text-primary w-10 text-center">
+                  {String(idx + 1).padStart(2, '0')}
+                </span>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-2 mb-1">
+                    <span class="text-xs bg-gold-light text-ink px-2 py-0.5 rounded">
+                      {g.data.type}
+                    </span>
+                    <time class="text-xs text-gray-400">
+                      {g.data.date.toLocaleDateString('zh-CN')}
+                    </time>
+                  </div>
+                  <h3 class="text-lg font-bold text-ink mb-1">{g.data.title}</h3>
+                  <p class="text-sm text-gray-600 line-clamp-2">{g.data.description}</p>
+                </div>
+                <span class="text-gray-400">→</span>
+              </div>
+            </a>
+          ))}
+        </div>
+      ) : (
+        <p class="text-gray-500">阅读路径文章正在编写中。</p>
+      )
+    }
+
+    <!-- 关于与联络 -->
+    <div class="mt-12 grid grid-cols-1 md:grid-cols-2 gap-6">
+      {
+        aboutItems.map((c) => (
+          <a
+            href={c.href}
+            class="block bg-paper-dark rounded-lg p-5 hover:bg-paper hover:no-underline border border-gray-200"
+          >
+            <h3 class="text-lg font-bold text-ink mb-1">{c.label}</h3>
+            <p class="text-sm text-gray-600">{c.desc}</p>
+          </a>
+        ))
+      }
     </div>
   </section>
 </BaseLayout>

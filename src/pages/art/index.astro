@@ -1,14 +1,72 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getCollection } from 'astro:content';
+
+const arts = (await getCollection('art', ({ data }) => !data.draft)).sort(
+  (a, b) => b.data.date.valueOf() - a.data.date.valueOf()
+);
+
+const types = ['诗歌', '散文', '小说', '评论', '音乐', '美术', '戏剧'];
+const grouped: Record<string, typeof arts> = {};
+for (const t of types) grouped[t] = arts.filter((a) => a.data.type === t);
 ---
 
-<BaseLayout title="文艺阵地" description="左翼青年的诗歌、散文、小说、评论与美术创作。">
-  <section class="max-w-3xl mx-auto px-4 py-12">
-    <h1 class="text-4xl font-bold mb-6">文艺阵地</h1>
-    <p class="text-gray-600 mb-8">文艺作品征集与展示板块，建设中。</p>
-    <div class="bg-white rounded-lg shadow p-8 text-center text-gray-500">
-      <p class="text-lg mb-2">🚧 建设中</p>
-      <p class="text-sm">本板块将在第三阶段完成，届时将开放投稿通道。</p>
-    </div>
+<BaseLayout title="文艺阵地" description="左翼青年的诗歌、散文、小说、评论、音乐与美术创作。">
+  <section class="max-w-content mx-auto px-4 py-12">
+    <header class="mb-10">
+      <h1 class="text-4xl font-bold mb-3">文艺阵地</h1>
+      <p class="text-gray-600">
+        美术、文学、音乐、戏剧——左翼青年的创作家园。允许接入 bilibili 视频作品。
+      </p>
+    </header>
+
+    {
+      types.map((t) => {
+        const list = grouped[t];
+        if (!list || list.length === 0) return null;
+        return (
+          <section class="mb-12">
+            <h2 class="text-2xl font-bold mb-4 border-l-4 border-gold pl-3">{t}</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {list.map((post) => (
+                <a
+                  href={`/art/${post.slug}/`}
+                  class="block bg-white rounded-lg shadow hover:shadow-lg transition-shadow p-6 hover:no-underline"
+                >
+                  <div class="flex items-center gap-2 text-xs text-gray-500 mb-2">
+                    <span class="bg-gold-light text-ink px-2 py-0.5 rounded">
+                      {post.data.type}
+                    </span>
+                    <time>{post.data.date.toLocaleDateString('zh-CN')}</time>
+                  </div>
+                  <h3 class="text-lg font-bold mb-2 text-ink">{post.data.title}</h3>
+                  <p class="text-gray-600 text-sm line-clamp-3 mb-3">{post.data.description}</p>
+                  <div class="text-xs text-gray-500">
+                    {post.data.author}
+                    {post.data.bilibili && <span class="ml-2 text-primary">▶ 视频作品</span>}
+                  </div>
+                </a>
+              ))}
+            </div>
+          </section>
+        );
+      })
+    }
+
+    {arts.length === 0 && <p class="text-gray-500">暂无作品。</p>}
+
+    <!-- 投稿号召 -->
+    <section class="mt-12 bg-paper-dark rounded-lg p-6 text-center">
+      <h2 class="text-xl font-bold mb-2">欢迎投稿文艺作品</h2>
+      <p class="text-sm text-gray-600 mb-4">
+        诗歌、散文、小说、评论、音乐、美术、戏剧——所有左翼青年的创作都在征集之列。
+      </p>
+      <a
+        href="/contact/"
+        class="inline-block px-5 py-2 bg-primary text-white rounded hover:opacity-90 hover:no-underline text-sm"
+      >
+        前往联络投稿 →
+      </a>
+    </section>
   </section>
 </BaseLayout>

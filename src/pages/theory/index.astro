@@ -5,37 +5,89 @@ import { getCollection } from 'astro:content';
 const articles = (await getCollection('articles', ({ data }) => !data.draft)).sort(
   (a, b) => b.data.date.valueOf() - a.data.date.valueOf()
 );
+
+const grouped: Record<string, typeof articles> = {};
+for (const a of articles) {
+  const c = a.data.category;
+  if (!grouped[c]) grouped[c] = [];
+  grouped[c].push(a);
+}
+
+const categoryOrder = ['经典著作', '概念词典', '国际共运史', '专题文章', '时事评论'];
+const sortedCategories = Object.keys(grouped).sort(
+  (a, b) => categoryOrder.indexOf(a) - categoryOrder.indexOf(b)
+);
+const allTags = [...new Set(articles.flatMap((a) => a.data.tags))].sort();
 ---
 
-<BaseLayout title="理论中心" description="经典著作导读、当代理论文章与概念词典。">
-  <section class="max-w-6xl mx-auto px-4 py-12">
-    <h1 class="text-4xl font-bold mb-6">理论中心</h1>
-    <p class="text-gray-600 mb-10">理论文章正在陆续整理发布。</p>
+<BaseLayout title="理论图书馆" description="经典著作、概念词典、国际共运史与专题文章。">
+  <section class="max-w-content mx-auto px-4 py-12">
+    <header class="mb-10">
+      <h1 class="text-4xl font-bold mb-3">理论图书馆</h1>
+      <p class="text-gray-600">
+        经典著作导读、概念词典、国际共运史与专题文章——为左翼学习者构建扎实的理论根基。
+      </p>
+      <div class="mt-4 flex flex-wrap gap-3 text-sm">
+        <a
+          href="/theory/concepts/"
+          class="inline-flex items-center gap-1 px-3 py-1.5 bg-paper-dark rounded hover:bg-paper hover:no-underline border border-gray-200"
+        >
+          📖 概念词典
+        </a>
+        <a
+          href="/guide/"
+          class="inline-flex items-center gap-1 px-3 py-1.5 bg-paper-dark rounded hover:bg-paper hover:no-underline border border-gray-200"
+        >
+          🎯 入门指南
+        </a>
+      </div>
+    </header>
 
     {
-      articles.length > 0 ? (
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {articles.map((post) => (
-            <a
-              href={`/theory/${post.slug}/`}
-              class="block bg-white rounded-lg shadow hover:shadow-lg transition-shadow p-6 hover:no-underline"
-            >
-              <div class="flex items-center gap-2 text-xs text-gray-500 mb-2">
-                <span class="bg-primary-light text-primary-dark px-2 py-0.5 rounded">
-                  {post.data.category}
-                </span>
-                <time>{post.data.date.toLocaleDateString('zh-CN')}</time>
-              </div>
-              <h2 class="text-lg font-bold mb-2 text-ink">
-                {post.data.title}
-              </h2>
-              <p class="text-gray-600 text-sm line-clamp-3">{post.data.description}</p>
-            </a>
+      sortedCategories.map((cat) => (
+        <section class="mb-12">
+          <h2 class="text-2xl font-bold mb-4 border-l-4 border-primary pl-3">{cat}</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {grouped[cat].map((post) => (
+              <a
+                href={`/theory/${post.slug}/`}
+                class="block bg-white rounded-lg shadow hover:shadow-lg transition-shadow p-6 hover:no-underline"
+              >
+                <div class="flex items-center gap-2 text-xs text-gray-500 mb-2">
+                  <span class="bg-primary-light text-primary-dark px-2 py-0.5 rounded">
+                    {post.data.category}
+                  </span>
+                  <span class="text-gray-400">{post.data.source}</span>
+                  <time>{post.data.date.toLocaleDateString('zh-CN')}</time>
+                </div>
+                <h3 class="text-lg font-bold mb-2 text-ink">{post.data.title}</h3>
+                <p class="text-gray-600 text-sm line-clamp-3 mb-3">{post.data.description}</p>
+                <div class="flex items-center justify-between text-xs">
+                  <span class="text-gray-500">{post.data.author}</span>
+                  <div class="flex flex-wrap gap-1">
+                    {post.data.tags.slice(0, 3).map((t) => (
+                      <span class="text-gray-400">#{t}</span>
+                    ))}
+                  </div>
+                </div>
+              </a>
+            ))}
+          </div>
+        </section>
+      ))
+    }
+
+    {articles.length === 0 && <p class="text-gray-500">暂无文章。</p>}
+
+    {allTags.length > 0 && (
+      <section class="mt-12 pt-8 border-t border-gray-200">
+        <h2 class="text-lg font-bold mb-4">标签</h2>
+        <div class="flex flex-wrap gap-2">
+          {allTags.map((t) => (
+            <span class="text-xs bg-gray-100 text-gray-600 px-3 py-1 rounded-full">#{t}</span>
           ))}
         </div>
-      ) : (
-        <p class="text-gray-500">暂无文章。</p>
-      )
-    }
+      </section>
+    )}
   </section>
 </BaseLayout>

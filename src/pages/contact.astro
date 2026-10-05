@@ -2,32 +2,229 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 ---
 
-<BaseLayout title="联络站" description="投稿、建议与加入青联社技术组。">
-  <section class="max-w-3xl mx-auto px-4 py-12">
-    <h1 class="text-4xl font-bold mb-6">联络站</h1>
-    <p class="text-gray-600 mb-8">
-      欢迎向本站投稿、提出建议，或加入青联社技术组参与网站建设。
-    </p>
+<BaseLayout title="★ 联络站" description="公开展板、投稿通道、通讯员征集、左翼组织表与我们的联系方式。">
+  <section class="bg-gold bg-opacity-20 border-y border-gold">
+    <div class="max-w-content mx-auto px-4 py-10">
+      <div class="flex items-center gap-2 text-sm text-gold-dark font-bold mb-2">
+        <span>★</span><span>主要模块</span>
+      </div>
+      <h1 class="text-4xl font-bold mb-3">联络站</h1>
+      <p class="text-gray-700 max-w-2xl">
+        投稿、建议、加入通讯员——指向"关于"、公开展板、投稿通道、通讯员征集、我们的联系方式、中国各公开左翼组织表、国际左翼组织表。
+      </p>
+    </div>
+  </section>
 
-    <div class="bg-white rounded-lg shadow p-8 space-y-6">
-      <div>
-        <h2 class="text-xl font-bold mb-2">投稿方式</h2>
-        <p class="text-gray-600 text-sm">
-          投稿邮箱与表单将在第四阶段上线。现阶段可先通过下方公开邮箱联系。
-        </p>
+  <section class="max-w-content mx-auto px-4 py-12">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* 投稿通道 */}
+      <div class="bg-white rounded-lg shadow p-6">
+        <h2 class="text-xl font-bold mb-3 text-ink">✉ 投稿通道</h2>
+        <p class="text-sm text-gray-600 mb-3">欢迎向《真理周刊》、网站各板块投稿。</p>
+        <ul class="text-sm text-gray-600 space-y-1 mb-4">
+          <li>• 理论稿件 3000-8000 字</li>
+          <li>• 文艺稿件不限字数</li>
+          <li>• 截稿：每周三 24:00</li>
+        </ul>
+        <a href="/journal/" class="text-sm text-primary hover:underline">查看征稿说明 →</a>
       </div>
 
-      <div>
-        <h2 class="text-xl font-bold mb-2">加入技术组</h2>
-        <p class="text-gray-600 text-sm">
-          熟悉 Astro / Tailwind / Cloudflare Pages 的同志，欢迎参与本站开发维护。
-        </p>
+      {/* 通讯员征集 */}
+      <div class="bg-white rounded-lg shadow p-6">
+        <h2 class="text-xl font-bold mb-3 text-ink">📣 通讯员征集</h2>
+        <p class="text-sm text-gray-600 mb-3">长期招募通讯员与技术组社员。</p>
+        <ul class="text-sm text-gray-600 space-y-1 mb-4">
+          <li>• 通讯员每月 ≥1 篇稿件</li>
+          <li>• 技术组每周 4-6 小时</li>
+          <li>• 学习小组引导员</li>
+        </ul>
+        <a href="/guide/recruitment/" class="text-sm text-primary hover:underline">查看招募详情 →</a>
       </div>
 
-      <div class="pt-4 border-t border-gray-200 text-sm text-gray-500">
-        <p>📮 联络邮箱：<code class="bg-gray-100 px-2 py-0.5 rounded">contact@dongfangyuxiao.example.com</code></p>
-        <p class="mt-2">⚠ 请勿通过公开渠道发送敏感信息，建议使用加密通信。</p>
+      {/* 关于 */}
+      <div class="bg-white rounded-lg shadow p-6">
+        <h2 class="text-xl font-bold mb-3 text-ink">★ 关于本站</h2>
+        <p class="text-sm text-gray-600 mb-3">通讯站定位、目标与运营团队。</p>
+        <ul class="text-sm text-gray-600 space-y-1 mb-4">
+          <li>• 青联社官方公开阵地</li>
+          <li>• 仅发布 L0–L1 级内容</li>
+          <li>• Astro + Cloudflare Pages</li>
+        </ul>
+        <a href="/about/" class="text-sm text-primary hover:underline">了解本站 →</a>
       </div>
     </div>
+
+    {/* 公开展板 */}
+    <section class="mt-12">
+      <h2 class="text-2xl font-bold mb-4 border-l-4 border-gold pl-3">📢 公开展板</h2>
+      <div class="bg-white rounded-lg shadow p-6">
+        <p class="text-sm text-gray-600 mb-4">
+          本站接受读者来信与公开讨论。以下为近期公开议题（不涉及组织内部事务）：
+        </p>
+        <ul class="text-sm text-gray-700 space-y-2">
+          <li class="pb-2 border-b border-gray-100">
+            <strong>读者来信 · 2026-10-04</strong> —— "关于'左翼'这个词，我们到底在说什么？"
+          </li>
+          <li class="pb-2 border-b border-gray-100">
+            <strong>讨论 · 2026-10-03</strong> —— "外卖骑手的老张，让我想起我父亲"
+          </li>
+          <li>
+            <strong>提议 · 2026-10-02</strong> —— "希望增设'共运史'专题"
+          </li>
+        </ul>
+        <p class="text-xs text-gray-500 mt-4">
+          想参与讨论？发送邮件至下方邮箱，标题"公开展板"。
+        </p>
+      </div>
+    </section>
+
+    {/* 中国公开左翼组织表 */}
+    <section class="mt-12">
+      <h2 class="text-2xl font-bold mb-4 border-l-4 border-gold pl-3">🇨🇳 中国公开左翼组织表</h2>
+      <div class="bg-white rounded-lg shadow overflow-hidden">
+        <table class="w-full text-sm">
+          <thead class="bg-paper-dark text-ink">
+            <tr>
+              <th class="text-left px-4 py-3 font-bold">名称</th>
+              <th class="text-left px-4 py-3 font-bold">公开活动形式</th>
+              <th class="text-left px-4 py-3 font-bold">备注</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100">
+            <tr>
+              <td class="px-4 py-3">东方欲晓通讯站（青联社）</td>
+              <td class="px-4 py-3 text-gray-600">网站、周刊、读书会</td>
+              <td class="px-4 py-3 text-gray-600">本站所属</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3">"实践"读书会网络</td>
+              <td class="px-4 py-3 text-gray-600">线下读书、线上交流</td>
+              <td class="px-4 py-3 text-gray-500">各地区分散活动</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3">马克思主义学习小组（高校）</td>
+              <td class="px-4 py-3 text-gray-600">校内学习、读书</td>
+              <td class="px-4 py-3 text-gray-500">多为高校社团形式</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3">独立时评博客/公众号</td>
+              <td class="px-4 py-3 text-gray-600">网络写作</td>
+              <td class="px-4 py-3 text-gray-500">零散存在</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="px-4 py-3 text-xs text-gray-500 bg-paper-dark">
+          ⓘ 此表仅收录<strong>公开活动</strong>组织。涉及非公开组织的信息不在本站发布。
+          若有公开组织希望加入此表，请联系编辑部。
+        </div>
+      </div>
+    </section>
+
+    {/* 国际左翼组织表 */}
+    <section class="mt-12">
+      <h2 class="text-2xl font-bold mb-4 border-l-4 border-gold pl-3">🌍 国际左翼组织表</h2>
+      <div class="bg-white rounded-lg shadow overflow-hidden">
+        <table class="w-full text-sm">
+          <thead class="bg-paper-dark text-ink">
+            <tr>
+              <th class="text-left px-4 py-3 font-bold">名称</th>
+              <th class="text-left px-4 py-3 font-bold">地区</th>
+              <th class="text-left px-4 py-3 font-bold">说明</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100">
+            <tr>
+              <td class="px-4 py-3">国际马克思主义趋势（IMT）</td>
+              <td class="px-4 py-3 text-gray-600">国际</td>
+              <td class="px-4 py-3 text-gray-500">托派传统，多国分部</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3">革命共产国际（RCI）</td>
+              <td class="px-4 py-3 text-gray-600">国际</td>
+              <td class="px-4 py-3 text-gray-500">原 IMT 改组</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3">第四国际</td>
+              <td class="px-4 py-3 text-gray-600">国际</td>
+              <td class="px-4 py-3 text-gray-500">托派传统国际组织</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3">共产党和工人党国际会议</td>
+              <td class="px-4 py-3 text-gray-600">国际</td>
+              <td class="px-4 py-3 text-gray-500">年度会议形式</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3">美国民主社会主义者（DSA）</td>
+              <td class="px-4 py-3 text-gray-600">美国</td>
+              <td class="px-4 py-3 text-gray-500">公开活动</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3">日本共产党</td>
+              <td class="px-4 py-3 text-gray-600">日本</td>
+              <td class="px-4 py-3 text-gray-500">合法议会党</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3">印度共产党（毛主义）</td>
+              <td class="px-4 py-3 text-gray-600">印度</td>
+              <td class="px-4 py-3 text-gray-500">地下武装斗争</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3">菲律宾共产党</td>
+              <td class="px-4 py-3 text-gray-600">菲律宾</td>
+              <td class="px-4 py-3 text-gray-500">长期人民战争</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3">土耳其共产党（马列）</td>
+              <td class="px-4 py-3 text-gray-600">土耳其</td>
+              <td class="px-4 py-3 text-gray-500">地下活动</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="px-4 py-3 text-xs text-gray-500 bg-paper-dark">
+          ⓘ 本表仅作信息整理，不构成政治背书。各组织立场、路线差异较大，请读者自行甄别。
+        </div>
+      </div>
+    </section>
+
+    {/* 联系方式 */}
+    <section class="mt-12">
+      <h2 class="text-2xl font-bold mb-4 border-l-4 border-gold pl-3">📮 我们的联系方式</h2>
+      <div class="bg-white rounded-lg shadow p-6">
+        <dl class="space-y-3 text-sm">
+          <div class="flex flex-col md:flex-row md:items-center gap-1 md:gap-3">
+            <dt class="font-bold text-ink md:w-32">公开邮箱</dt>
+            <dd class="text-gray-700">
+              <code class="bg-paper-dark px-2 py-1 rounded">contact@dongfangyuxiao.example.com</code>
+            </dd>
+          </div>
+          <div class="flex flex-col md:flex-row md:items-center gap-1 md:gap-3">
+            <dt class="font-bold text-ink md:w-32">Telegram</dt>
+            <dd class="text-gray-700">
+              <code class="bg-paper-dark px-2 py-1 rounded">@dongfangyuxiao</code>
+            </dd>
+          </div>
+          <div class="flex flex-col md:flex-row md:items-center gap-1 md:gap-3">
+            <dt class="font-bold text-ink md:w-32">RSS 订阅</dt>
+            <dd class="text-gray-700">
+              <a href="/rss.xml" class="text-primary hover:underline">/rss.xml</a>
+            </dd>
+          </div>
+          <div class="flex flex-col md:flex-row md:items-center gap-1 md:gap-3">
+            <dt class="font-bold text-ink md:w-32">编辑部回复</dt>
+            <dd class="text-gray-700">3-5 个工作日内回信</dd>
+          </div>
+        </dl>
+
+        <div class="mt-6 pt-4 border-t border-gray-200 text-sm text-gray-600">
+          <p class="mb-2">⚠ <strong>安全须知</strong>：</p>
+          <ul class="space-y-1 list-disc list-inside text-xs">
+            <li>请勿通过公开渠道发送敏感信息，建议使用 <a href="/tools/proton-mail/" class="text-primary hover:underline">Proton Mail</a> 加密邮箱</li>
+            <li>不要求透露真实身份，使用笔名即可</li>
+            <li>严禁在公开渠道讨论非法活动</li>
+            <li>建议参照 <a href="/tools/security-guide/" class="text-primary hover:underline">安全通信基础指南</a> 行事</li>
+          </ul>
+        </div>
+      </div>
+    </section>
   </section>
 </BaseLayout>

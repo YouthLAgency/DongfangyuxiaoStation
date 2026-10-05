@@ -1,0 +1,52 @@
+---
+import ReaderLayout from '../../layouts/ReaderLayout.astro';
+import { getCollection } from 'astro:content';
+
+export async function getStaticPaths() {
+  const tools = await getCollection('tools', ({ data }) => !data.draft);
+  return tools.map((post) => ({
+    params: { slug: post.slug },
+    props: { post },
+  }));
+}
+
+const { post } = Astro.props;
+const { Content, headings } = await post.render();
+
+const toc = headings
+  .filter((h) => h.depth === 2 || h.depth === 3)
+  .map((h) => ({ text: h.text, depth: h.depth, slug: h.slug }));
+---
+
+<ReaderLayout
+  title={post.data.name}
+  description={post.data.description}
+  sidebarTitle="本页目录"
+  toc={toc}
+  meta={[
+    { label: '分类', value: post.data.type },
+    { label: '推荐', value: post.data.recommended ? '是' : '否' },
+  ]}
+  footer={
+    <>
+      <a
+        href="/tools/"
+        class="inline-block text-sm text-primary hover:opacity-80"
+      >
+        ← 返回左翼工具箱
+      </a>
+      {post.data.url && (
+        <a
+          href={post.data.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="ml-4 inline-block text-sm text-primary hover:opacity-80"
+        >
+          访问官网 →
+        </a>
+      )}
+    </>
+  }
+>
+  <Content />
+</ReaderLayout>

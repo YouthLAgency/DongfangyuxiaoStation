@@ -10,6 +10,23 @@ const siteTitle = '东方欲晓——马列毛主义通讯站';
 const description =
   '青联社官方网站，左翼青年入门指南、理论资源、文艺作品与刊物阅读的集散地。';
 
+// ★主模块：金黄背景
+const starSections = [
+  {
+    title: '期刊通讯',
+    desc: '《真理周刊》等电子刊物——网上阅读、PDF 下载、订阅与征稿。',
+    href: '/journal/',
+    icon: '📰',
+  },
+  {
+    title: '联络站',
+    desc: '投稿通道、通讯员征集、左翼组织表、我们的联系方式。',
+    href: '/contact/',
+    icon: '✉',
+  },
+];
+
+// 一般模块
 const sections = [
   {
     title: '入门指南',
@@ -18,8 +35,8 @@ const sections = [
     icon: '📖',
   },
   {
-    title: '理论中心',
-    desc: '经典著作导读、当代理论文章、概念词典，构建扎实的理论根基。',
+    title: '理论图书馆',
+    desc: '经典著作、概念词典、国际共运史、专题文章。',
     href: '/theory/',
     icon: '⚑',
   },
@@ -30,22 +47,10 @@ const sections = [
     icon: '✎',
   },
   {
-    title: '刊物阅读',
-    desc: '《真理周刊》等电子刊物，记录我们的思考与实践。',
-    href: '/journal/',
-    icon: '📰',
-  },
-  {
-    title: '工具导航',
-    desc: '学习工具、资料库、在线辞典与协作平台推荐。',
+    title: '左翼工具箱',
+    desc: '加密工具、安全指南、常用网站、学习资源。',
     href: '/tools/',
     icon: '🧰',
-  },
-  {
-    title: '联络投稿',
-    desc: '向本站投稿、提出建议或加入青联社技术组。',
-    href: '/contact/',
-    icon: '✉',
   },
 ];
 ---
@@ -53,8 +58,8 @@ const sections = [
 <BaseLayout title={siteTitle} description={description}>
   <!-- Hero 区域 -->
   <section class="bg-gradient-to-br from-primary-dark to-primary text-white">
-    <div class="max-w-6xl mx-auto px-4 py-20 text-center">
-      <p class="text-sm tracking-[0.3em] uppercase mb-4 text-red-200">
+    <div class="max-w-content mx-auto px-4 py-20 text-center">
+      <p class="text-sm tracking-[0.3em] uppercase mb-4 text-gold">
         Dongfang Yuxiao · Marxist-Leninist-Maoist
       </p>
       <h1 class="text-4xl md:text-6xl font-bold mb-6">东方欲晓</h1>
@@ -68,7 +73,7 @@ const sections = [
       <div class="mt-10 flex flex-wrap justify-center gap-4">
         <a
           href="/guide/"
-          class="bg-white text-primary-dark px-8 py-3 rounded font-bold hover:bg-red-50 transition-colors hover:no-underline"
+          class="bg-gold text-ink px-8 py-3 rounded font-bold hover:bg-gold-light transition-colors hover:no-underline"
         >
           从入门指南开始 →
         </a>
@@ -82,11 +87,39 @@ const sections = [
     </div>
   </section>
 
+  <!-- ★主模块 -->
+  <section class="bg-gold bg-opacity-20 border-y border-gold">
+    <div class="max-w-content mx-auto px-4 py-10">
+      <div class="flex items-center gap-2 mb-4">
+        <span class="text-gold-dark text-lg">★</span>
+        <h2 class="text-xl font-bold text-ink">主要模块</h2>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {
+          starSections.map((s) => (
+            <a
+              href={s.href}
+              class="block bg-white rounded-lg shadow hover:shadow-lg transition-shadow p-6 border-2 border-gold hover:border-gold-dark hover:no-underline"
+            >
+              <div class="flex items-start gap-4">
+                <div class="text-3xl">{s.icon}</div>
+                <div>
+                  <h3 class="text-lg font-bold mb-2 text-ink">{s.title}</h3>
+                  <p class="text-gray-600 text-sm leading-relaxed">{s.desc}</p>
+                </div>
+              </div>
+            </a>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
   <!-- 核心板块入口 -->
-  <section class="max-w-6xl mx-auto px-4 py-16">
-    <h2 class="text-3xl font-bold text-center mb-3">核心板块</h2>
-    <p class="text-center text-gray-600 mb-10">六大功能，覆盖学习、创作、交流全流程</p>
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+  <section class="max-w-content mx-auto px-4 py-16">
+    <h2 class="text-3xl font-bold text-center mb-3">其他板块</h2>
+    <p class="text-center text-gray-600 mb-10">入门、理论、文艺、工具——四模块覆盖学习与创作</p>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
       {
         sections.map((s) => (
           <a
@@ -94,7 +127,7 @@ const sections = [
             class="block bg-white rounded-lg shadow hover:shadow-lg transition-shadow p-6 border border-gray-100 hover:border-primary hover:no-underline"
           >
             <div class="text-3xl mb-3">{s.icon}</div>
-            <h3 class="text-xl font-bold mb-2 text-ink">{s.title}</h3>
+            <h3 class="text-lg font-bold mb-2 text-ink">{s.title}</h3>
             <p class="text-gray-600 text-sm leading-relaxed">{s.desc}</p>
           </a>
         ))
@@ -104,10 +137,10 @@ const sections = [
 
   <!-- 最新文章 -->
   <section class="bg-paper-dark py-16">
-    <div class="max-w-6xl mx-auto px-4">
+    <div class="max-w-content mx-auto px-4">
       <div class="flex items-center justify-between mb-8">
         <h2 class="text-3xl font-bold">最新理论文章</h2>
-        <a href="/theory/" class="text-primary font-semibold">
+        <a href="/theory/" class="text-primary font-semibold hover:underline">
           查看全部 →
         </a>
       </div>
@@ -124,6 +157,7 @@ const sections = [
                   <span class="bg-primary-light text-primary-dark px-2 py-0.5 rounded">
                     {post.data.category}
                   </span>
+                  <span class="text-gray-400">{post.data.source}</span>
                   <time>{post.data.date.toLocaleDateString('zh-CN')}</time>
                 </div>
                 <h3 class="text-lg font-bold mb-2 text-ink">
@@ -146,7 +180,7 @@ const sections = [
   <!-- 号召语 -->
   <section class="max-w-4xl mx-auto px-4 py-16 text-center">
     <blockquote class="text-2xl md:text-3xl font-display italic text-primary-dark leading-relaxed">
-      “世界是你们的，也是我们的，但是归根结底是你们的。”
+      "世界是你们的，也是我们的，但是归根结底是你们的。"
     </blockquote>
     <p class="mt-4 text-gray-600">——青年是整个社会力量中最积极、最有生气的力量。</p>
   </section>

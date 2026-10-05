@@ -1,14 +1,73 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getCollection } from 'astro:content';
+
+const tools = (await getCollection('tools', ({ data }) => !data.draft)).sort((a, b) => {
+  if (a.data.recommended !== b.data.recommended) return a.data.recommended ? -1 : 1;
+  return a.data.name.localeCompare(b.data.name, 'zh-CN');
+});
+
+const types = ['加密工具', '安全指南', '常用网站', '学习资源'];
+const grouped: Record<string, typeof tools> = {};
+for (const t of types) grouped[t] = tools.filter((x) => x.data.type === t);
 ---
 
-<BaseLayout title="工具导航" description="学习工具、资料库、在线辞典与协作平台推荐。">
-  <section class="max-w-3xl mx-auto px-4 py-12">
-    <h1 class="text-4xl font-bold mb-6">工具导航</h1>
-    <p class="text-gray-600 mb-8">学习工具与资料库导航，建设中。</p>
-    <div class="bg-white rounded-lg shadow p-8 text-center text-gray-500">
-      <p class="text-lg mb-2">🚧 建设中</p>
-      <p class="text-sm">本板块将在第三阶段完成。</p>
-    </div>
+<BaseLayout title="左翼工具箱" description="加密工具、安全指南、常用网站与学习资源。">
+  <section class="max-w-content mx-auto px-4 py-12">
+    <header class="mb-10">
+      <h1 class="text-4xl font-bold mb-3">左翼工具箱</h1>
+      <p class="text-gray-600">
+        加密工具、安全指南、常用网站与学习资源——左翼工作者的实用工具集。
+      </p>
+      <div class="mt-4 p-4 bg-paper-dark rounded text-sm text-gray-600">
+        ⚠ <strong>安全须知</strong>：所有工具仅作信息参考，使用者需自行评估风险。
+        公开网络环境下，请按 <a href="/tools/security-guide/" class="text-primary hover:underline">安全通信基础指南</a> 行事。
+      </div>
+    </header>
+
+    {
+      types.map((t) => {
+        const list = grouped[t];
+        if (!list || list.length === 0) return null;
+        return (
+          <section class="mb-12">
+            <h2 class="text-2xl font-bold mb-4 border-l-4 border-gold pl-3">{t}</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {list.map((tool) => (
+                <article class="bg-white rounded-lg shadow p-6 hover:shadow-md transition-shadow">
+                  <div class="flex items-start justify-between gap-3 mb-2">
+                    <h3 class="text-lg font-bold text-ink">{tool.data.name}</h3>
+                    {tool.data.recommended && (
+                      <span class="text-xs bg-gold text-ink px-2 py-0.5 rounded font-bold whitespace-nowrap">
+                        ★ 推荐
+                      </span>
+                    )}
+                  </div>
+                  <p class="text-sm text-gray-600 mb-4">{tool.data.description}</p>
+                  {tool.data.url && (
+                    <a
+                      href={tool.data.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="text-sm text-primary hover:underline break-all"
+                    >
+                      {tool.data.url} →
+                    </a>
+                  )}
+                  {!tool.data.url && (
+                    <a
+                      href={`/tools/${tool.slug}/`}
+                      class="text-sm text-primary hover:underline"
+                    >
+                      查看详细说明 →
+                    </a>
+                  )}
+                </article>
+              ))}
+            </div>
+          </section>
+        );
+      })
+    }
   </section>
 </BaseLayout>

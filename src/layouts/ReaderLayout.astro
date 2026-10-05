@@ -1,0 +1,98 @@
+---
+import BaseLayout from './BaseLayout.astro';
+
+interface TocItem {
+  text: string;
+  depth: number;
+  slug?: string;
+}
+
+interface Props {
+  title: string;
+  description?: string;
+  /** 侧边栏标题（如"目录""本刊目录"） */
+  sidebarTitle?: string;
+  /** 侧边栏内容：可以是导航链接列表或本页目录 */
+  toc?: TocItem[];
+  /** 顶部 meta 信息：作者、日期、分类等 */
+  meta?: { label: string; value: string }[];
+  /** 底部可选块（如标签、上下篇） */
+  footer?: any;
+  /** 侧栏自定义 HTML（覆盖 toc） */
+  sidebar?: any;
+}
+
+const {
+  title,
+  description,
+  sidebarTitle = '本页目录',
+  toc = [],
+  meta = [],
+  footer,
+  sidebar,
+} = Astro.props;
+---
+
+<BaseLayout title={title} description={description}>
+  <div class="max-w-content mx-auto px-4 py-10">
+    <div class="grid grid-cols-1 lg:grid-cols-[260px_minmax(0,1fr)] gap-8">
+      <!-- 左侧目录 -->
+      <aside class="hidden lg:block">
+        <div class="sticky top-24">
+          {sidebar ? (
+            sidebar
+          ) : toc.length > 0 ? (
+            <nav class="border-l border-gray-200 pl-4">
+              <p class="text-sm font-bold text-ink mb-3">{sidebarTitle}</p>
+              <ul class="space-y-2 text-sm">
+                {toc.map((item) => (
+                  <li
+                    class:list={[
+                      'toc-link border-l-2 border-transparent pl-3 -ml-4',
+                      item.depth === 3 && 'pl-7',
+                    ]}
+                  >
+                    <a
+                      href={item.slug ? `#${item.slug}` : '#'}
+                      class="block text-gray-600 hover:text-primary transition-colors hover:no-underline"
+                    >
+                      {item.text}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+          ) : (
+            <p class="text-sm text-gray-400">本文无目录</p>
+          )}
+        </div>
+      </aside>
+
+      <!-- 右侧正文 -->
+      <article class="min-w-0">
+        <header class="mb-8 pb-6 border-b border-gray-200">
+          <h1 class="text-3xl md:text-4xl font-bold mb-4 text-ink">{title}</h1>
+          {description && (
+            <p class="text-lg text-gray-600 leading-relaxed">{description}</p>
+          )}
+          {meta.length > 0 && (
+            <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500 mt-4">
+              {meta.map((m) => (
+                <span>
+                  <span class="text-gray-400">{m.label}：</span>
+                  <span class="text-ink-light">{m.value}</span>
+                </span>
+              ))}
+            </div>
+          )}
+        </header>
+
+        <div class="prose-content">
+          <slot />
+        </div>
+
+        {footer && <div class="mt-12 pt-6 border-t border-gray-200">{footer}</div>}
+      </article>
+    </div>
+  </div>
+</BaseLayout>
