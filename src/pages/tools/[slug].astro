@@ -27,26 +27,25 @@ const toc = headings
     { label: '分类', value: post.data.type },
     { label: '推荐', value: post.data.recommended ? '是' : '否' },
   ]}
-  footer={
-    <div>
-      <a
-        href="/tools/"
-        class="inline-block text-sm text-primary hover:opacity-80"
-      >
-        ← 返回左翼工具箱
-      </a>
-      {post.data.url && (
-        <a
-          href={post.data.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          class="ml-4 inline-block text-sm text-primary hover:opacity-80"
-        >
-          访问官网 →
-        </a>
-      )}
-    </div>
-  }
 >
   <Content />
+
+  <div slot="footer">
+    <a
+      href="/tools/"
+      class="inline-block text-sm text-primary hover:opacity-80 hover:no-underline"
+    >
+      ← 返回左翼工具箱
+    </a>
+    {post.data.url && (
+      <a
+        href={post.data.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="ml-4 inline-block text-sm text-primary hover:opacity-80 hover:no-underline"
+      >
+        访问官网 →
+      </a>
+    )}
+  </div>
 </ReaderLayout>

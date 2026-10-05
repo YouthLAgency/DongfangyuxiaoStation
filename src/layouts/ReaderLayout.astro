@@ -16,8 +16,6 @@ interface Props {
   toc?: TocItem[];
   /** 顶部 meta 信息：作者、日期、分类等 */
   meta?: { label: string; value: string }[];
-  /** 底部可选块（如标签、上下篇） */
-  footer?: any;
   /** 侧栏自定义 HTML（覆盖 toc） */
   sidebar?: any;
 }
@@ -28,7 +26,6 @@ const {
   sidebarTitle = '本页目录',
   toc = [],
   meta = [],
-  footer,
   sidebar,
 } = Astro.props;
 ---
@@ -91,7 +88,9 @@ const {
           <slot />
         </div>
 
-        {footer && <div class="mt-12 pt-6 border-t border-gray-200">{footer}</div>}
+        <div class="mt-12 pt-6 border-t border-gray-200">
+          <slot name="footer" />
+        </div>
       </article>
     </div>
   </div>

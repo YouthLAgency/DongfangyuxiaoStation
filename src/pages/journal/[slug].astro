@@ -31,37 +31,36 @@ const toc = headings
       value: post.data.date.toLocaleDateString('zh-CN'),
     },
   ]}
-  footer={
-    <div>
-      <div class="flex flex-wrap gap-3">
-        {post.data.downloadUrl && (
-          <a
-            href={post.data.downloadUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            class="inline-flex items-center gap-1 px-4 py-2 bg-primary text-white rounded hover:opacity-90 hover:no-underline text-sm"
-          >
-            ⬇ PDF 下载（外链）
-          </a>
-        )}
-        <a
-          href="/journal/"
-          class="inline-flex items-center gap-1 px-4 py-2 border border-gray-300 text-ink rounded hover:bg-paper-dark text-sm hover:no-underline"
-        >
-          ← 返回刊物列表
-        </a>
-      </div>
-      {post.data.tags.length ? (
-        <div class="mt-4 flex flex-wrap gap-2">
-          {post.data.tags.map((tag) => (
-            <span class="text-xs bg-gray-100 text-gray-600 px-3 py-1 rounded-full">
-              #{tag}
-            </span>
-          ))}
-        </div>
-      ) : null}
-    </div>
-  }
 >
   <Content />
+
+  <div slot="footer">
+    <div class="flex flex-wrap gap-3">
+      {post.data.downloadUrl && (
+        <a
+          href={post.data.downloadUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="inline-flex items-center gap-1 px-4 py-2 bg-primary text-white rounded hover:opacity-90 hover:no-underline text-sm"
+        >
+          ⬇ PDF 下载（外链）
+        </a>
+      )}
+      <a
+        href="/journal/"
+        class="inline-flex items-center gap-1 px-4 py-2 border border-gray-300 text-ink rounded hover:bg-paper-dark text-sm hover:no-underline"
+      >
+        ← 返回刊物列表
+      </a>
+    </div>
+    {post.data.tags.length ? (
+      <div class="mt-4 flex flex-wrap gap-2">
+        {post.data.tags.map((tag) => (
+          <span class="text-xs bg-gray-100 text-gray-600 px-3 py-1 rounded-full">
+            #{tag}
+          </span>
+        ))}
+      </div>
+    ) : null}
+  </div>
 </ReaderLayout>

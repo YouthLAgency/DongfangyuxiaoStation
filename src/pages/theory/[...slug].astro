@@ -26,23 +26,30 @@ const toc = headings
   meta={[
     { label: '作者', value: post.data.author },
     { label: '分类', value: post.data.category },
-    { label: '来源', value: post.data.source },
     {
-      label: '日期',
+      label: '发表日期',
       value: post.data.date.toLocaleDateString('zh-CN'),
     },
+    { label: '来源', value: post.data.source },
   ]}
-  footer={
-    post.data.tags.length ? (
-      <div class="flex flex-wrap gap-2">
+>
+  <Content />
+
+  <div slot="footer">
+    <a
+      href="/theory/"
+      class="inline-block text-sm text-primary hover:opacity-80 hover:no-underline"
+    >
+      ← 返回理论图书馆
+    </a>
+    {post.data.tags.length ? (
+      <div class="mt-4 flex flex-wrap gap-2">
         {post.data.tags.map((tag) => (
           <span class="text-xs bg-gray-100 text-gray-600 px-3 py-1 rounded-full">
             #{tag}
           </span>
         ))}
       </div>
-    ) : null
-  }
->
-  <Content />
+    ) : null}
+  </div>
 </ReaderLayout>

@@ -31,36 +31,35 @@ const toc = headings
       value: post.data.date.toLocaleDateString('zh-CN'),
     },
   ]}
-  footer={
-    <div>
-      {post.data.bilibili && (
-        <div class="mb-6">
-          <h3 class="text-sm font-bold text-ink mb-2">Bilibili 视频</h3>
-          <div class="aspect-video bg-paper-dark rounded-lg overflow-hidden">
-            <iframe
-              src={`//player.bilibili.com/player.html?bvid=${post.data.bilibili}&page=1`}
-              scrolling="no"
-              border="0"
-              frameborder="no"
-              framespacing="0"
-              allowfullscreen="true"
-              class="w-full h-full"
-              loading="lazy"
-            />
-          </div>
-        </div>
-      )}
-      {post.data.tags.length ? (
-        <div class="flex flex-wrap gap-2">
-          {post.data.tags.map((tag) => (
-            <span class="text-xs bg-gray-100 text-gray-600 px-3 py-1 rounded-full">
-              #{tag}
-            </span>
-          ))}
-        </div>
-      ) : null}
-    </div>
-  }
 >
   <Content />
+
+  <div slot="footer">
+    {post.data.bilibili && (
+      <div class="mb-6">
+        <h3 class="text-sm font-bold text-ink mb-2">Bilibili 视频</h3>
+        <div class="aspect-video bg-paper-dark rounded-lg overflow-hidden">
+          <iframe
+            src={`//player.bilibili.com/player.html?bvid=${post.data.bilibili}&page=1`}
+            scrolling="no"
+            border="0"
+            frameborder="no"
+            framespacing="0"
+            allowfullscreen="true"
+            class="w-full h-full"
+            loading="lazy"
+          />
+        </div>
+      </div>
+    )}
+    {post.data.tags.length ? (
+      <div class="flex flex-wrap gap-2">
+        {post.data.tags.map((tag) => (
+          <span class="text-xs bg-gray-100 text-gray-600 px-3 py-1 rounded-full">
+            #{tag}
+          </span>
+        ))}
+      </div>
+    ) : null}
+  </div>
 </ReaderLayout>
