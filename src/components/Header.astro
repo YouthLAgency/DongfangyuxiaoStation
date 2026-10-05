@@ -15,7 +15,7 @@ const currentPath = Astro.url.pathname;
 <header class="bg-primary-dark text-white sticky top-0 z-50 shadow-md">
   <div class="max-w-6xl mx-auto px-4">
     <div class="flex items-center justify-between h-16">
-      <a href="/" class="flex items-center gap-2 hover:no-underline">
+      <a href="/" class="flex items-center gap-2 hover:no-underline text-white">
         <span class="text-2xl" aria-hidden="true">★</span>
         <span class="text-xl font-bold tracking-wide">东方欲晓</span>
       </a>
@@ -32,7 +32,7 @@ const currentPath = Astro.url.pathname;
               <a
                 href={item.href}
                 class:list={[
-                  'px-3 py-2 rounded text-sm hover:bg-white/10 transition-colors',
+                  'px-3 py-2 rounded text-sm hover:bg-white/10 transition-colors text-white',
                   isActive && 'bg-white/15 font-semibold',
                 ]}
               >
@@ -51,7 +51,7 @@ const currentPath = Astro.url.pathname;
             navItems.map((item) => (
               <a
                 href={item.href}
-                class="block px-4 py-2 text-sm hover:bg-white/10"
+                class="block px-4 py-2 text-sm hover:bg-white/10 text-white"
               >
                 {item.label}
               </a>
