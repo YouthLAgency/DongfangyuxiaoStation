@@ -32,7 +32,7 @@ const toc = headings
     },
   ]}
   footer={
-    <>
+    <div>
       {post.data.bilibili && (
         <div class="mb-6">
           <h3 class="text-sm font-bold text-ink mb-2">Bilibili 视频</h3>
@@ -59,7 +59,7 @@ const toc = headings
           ))}
         </div>
       ) : null}
-    </>
+    </div>
   }
 >
   <Content />

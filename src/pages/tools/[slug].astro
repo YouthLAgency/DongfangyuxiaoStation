@@ -28,7 +28,7 @@ const toc = headings
     { label: '推荐', value: post.data.recommended ? '是' : '否' },
   ]}
   footer={
-    <>
+    <div>
       <a
         href="/tools/"
         class="inline-block text-sm text-primary hover:opacity-80"
@@ -45,7 +45,7 @@ const toc = headings
           访问官网 →
         </a>
       )}
-    </>
+    </div>
   }
 >
   <Content />

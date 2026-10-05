@@ -32,7 +32,7 @@ const toc = headings
     },
   ]}
   footer={
-    <>
+    <div>
       <div class="flex flex-wrap gap-3">
         {post.data.downloadUrl && (
           <a
@@ -60,7 +60,7 @@ const toc = headings
           ))}
         </div>
       ) : null}
-    </>
+    </div>
   }
 >
   <Content />
