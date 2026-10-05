@@ -33,9 +33,9 @@ const toc = headings
     },
   ]}
   footer={
-    post.data.tags.length > 0 ? (
+    post.data.tags.length ? (
       <div class="flex flex-wrap gap-2">
-        {post.data.tags.map((tag: string) => (
+        {post.data.tags.map((tag) => (
           <span class="text-xs bg-gray-100 text-gray-600 px-3 py-1 rounded-full">
             #{tag}
           </span>
