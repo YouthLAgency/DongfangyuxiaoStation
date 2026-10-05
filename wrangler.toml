@@ -1,0 +1,11 @@
+# Cloudflare Workers 静态资源部署配置
+# 详见：https://developers.cloudflare.com/workers/static-assets/
+
+name = "dongfangyuxiaostation"
+compatibility_date = "2024-09-23"
+
+# 静态资源目录（Astro 构建输出）
+[assets]
+directory = "./dist"
+# SPA 回退（可选）：找不到文件时返回 404.html
+not_found_page = "./dist/404.html"
