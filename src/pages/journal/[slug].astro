@@ -16,6 +16,9 @@ const { Content, headings } = await post.render();
 const toc = headings
   .filter((h) => h.depth === 2 || h.depth === 3)
   .map((h) => ({ text: h.text, depth: h.depth, slug: h.slug }));
+
+const hasPdf = !!(post.data.pdfRepo && post.data.pdfPath);
+const pdfBranch = post.data.pdfBranch || 'main';
 ---
 
 <ReaderLayout
@@ -32,10 +35,56 @@ const toc = headings
     },
   ]}
 >
-  <Content />
+  {hasPdf && (
+    <div class="mb-8">
+      <div class="flex items-center gap-3 mb-3">
+        <button
+          type="button"
+          id="tab-pdf"
+          class="px-4 py-2 bg-primary text-white rounded text-sm font-semibold"
+        >
+          📄 PDF 版
+        </button>
+        <button
+          type="button"
+          id="tab-text"
+          class="px-4 py-2 border border-gray-300 text-ink rounded text-sm hover:bg-paper-dark"
+        >
+          📝 文字版
+        </button>
+        <span id="pdf-status" class="text-xs text-gray-500">加载中…</span>
+      </div>
+
+      <div id="pdf-panel" class="border border-gray-200 rounded-lg overflow-hidden bg-white">
+        <div class="aspect-[8.5/11] w-full">
+          <iframe
+            id="pdf-frame"
+            class="w-full h-full"
+            style="min-height: 600px;"
+            title={`${post.data.title} PDF 在线阅读`}
+          ></iframe>
+        </div>
+      </div>
+
+      <div id="text-panel" class="hidden">
+        <Content />
+      </div>
+    </div>
+  )}
+
+  {!hasPdf && <Content />}
 
   <div slot="footer">
     <div class="flex flex-wrap gap-3">
+      {hasPdf && (
+        <button
+          type="button"
+          id="download-pdf-btn"
+          class="inline-flex items-center gap-1 px-4 py-2 bg-gold text-ink rounded hover:opacity-90 hover:no-underline text-sm font-semibold"
+        >
+          ⬇ 下载 PDF
+        </button>
+      )}
       {post.data.downloadUrl && (
         <a
           href={post.data.downloadUrl}
@@ -64,3 +113,79 @@ const toc = headings
     ) : null}
   </div>
 </ReaderLayout>
+
+{hasPdf && (
+  <script is:inline define:vars={{ pdfRepo: post.data.pdfRepo, pdfPath: post.data.pdfPath, pdfBranch }}>
+    (function () {
+      const statusEl = document.getElementById('pdf-status');
+      const frame = document.getElementById('pdf-frame');
+      const tabPdf = document.getElementById('tab-pdf');
+      const tabText = document.getElementById('tab-text');
+      const pdfPanel = document.getElementById('pdf-panel');
+      const textPanel = document.getElementById('text-panel');
+      const downloadBtn = document.getElementById('download-pdf-btn');
+
+      let blobUrl = null;
+
+      // 从 GitHub API 获取 PDF（base64 → blob → iframe）
+      async function loadPdf() {
+        try {
+          statusEl.textContent = '加载中…';
+          const [owner, repo] = pdfRepo.split('/');
+          const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${encodeURIComponent(pdfPath)}?ref=${pdfBranch}`;
+          const res = await fetch(apiUrl, {
+            headers: { Accept: 'application/vnd.github.raw' },
+          });
+          if (!res.ok) {
+            throw new Error(`HTTP ${res.status}`);
+          }
+          const blob = await res.blob();
+          blobUrl = URL.createObjectURL(blob);
+          frame.src = blobUrl;
+          statusEl.textContent = '✓ 已加载';
+          statusEl.className = 'text-xs text-green-600';
+        } catch (err) {
+          statusEl.textContent = `✗ 加载失败：${err.message}`;
+          statusEl.className = 'text-xs text-red-600';
+          // 回退方案：用 raw URL 直接嵌入（公开仓库可用）
+          const [owner, repo] = pdfRepo.split('/');
+          frame.src = `https://raw.githubusercontent.com/${owner}/${repo}/${pdfBranch}/${pdfPath}`;
+        }
+      }
+
+      // Tab 切换
+      tabPdf.addEventListener('click', () => {
+        tabPdf.className = 'px-4 py-2 bg-primary text-white rounded text-sm font-semibold';
+        tabText.className = 'px-4 py-2 border border-gray-300 text-ink rounded text-sm hover:bg-paper-dark';
+        pdfPanel.classList.remove('hidden');
+        textPanel.classList.add('hidden');
+      });
+      tabText.addEventListener('click', () => {
+        tabText.className = 'px-4 py-2 bg-primary text-white rounded text-sm font-semibold';
+        tabPdf.className = 'px-4 py-2 border border-gray-300 text-ink rounded text-sm hover:bg-paper-dark';
+        textPanel.classList.remove('hidden');
+        pdfPanel.classList.add('hidden');
+      });
+
+      // 下载 PDF
+      if (downloadBtn) {
+        downloadBtn.addEventListener('click', () => {
+          if (blobUrl) {
+            const a = document.createElement('a');
+            a.href = blobUrl;
+            a.download = pdfPath.split('/').pop();
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+          } else {
+            // 回退到 raw URL
+            const [owner, repo] = pdfRepo.split('/');
+            window.open(`https://raw.githubusercontent.com/${owner}/${repo}/${pdfBranch}/${pdfPath}`, '_blank');
+          }
+        });
+      }
+
+      loadPdf();
+    })();
+  </script>
+)}
