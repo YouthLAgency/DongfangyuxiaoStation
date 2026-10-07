@@ -1,0 +1,195 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+
+const collections = ['guide', 'articles', 'concepts', 'art', 'journals', 'tools'];
+
+export function getStaticPaths() {
+  return collections.map((collection) => ({
+    params: { collection },
+  }));
+}
+
+const { collection } = Astro.params;
+---
+
+<BaseLayout title={`内容列表 · 后台管理`} description="管理板块内容列表。">
+  <section class="max-w-content mx-auto px-4 py-10">
+    <div class="flex items-center justify-between mb-6">
+      <div>
+        <p class="text-sm text-gray-500 mb-1">
+          <a href="/admin/" class="hover:underline">后台首页</a> / <span id="crumb-label">加载中…</span>
+        </p>
+        <h1 id="page-title" class="text-3xl font-bold text-ink">加载中…</h1>
+      </div>
+      <a
+        id="new-btn"
+        href={`/admin/${collection}/new`}
+        class="px-5 py-2 bg-primary text-white rounded hover:opacity-90 text-sm hover:no-underline"
+      >
+        + 新增
+      </a>
+    </div>
+
+    <!-- 搜索框 -->
+    <div class="mb-4">
+      <input
+        id="search"
+        type="text"
+        placeholder="搜索标题…"
+        class="w-full md:w-80 border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-primary"
+      />
+    </div>
+
+    <!-- 列表 -->
+    <div id="list-container" class="bg-white rounded-lg shadow overflow-hidden">
+      <p class="p-6 text-gray-500 text-center">加载中…</p>
+    </div>
+  </section>
+</BaseLayout>
+
+<script is:inline src="/admin-utils.js"></script>
+<script is:inline>
+(function () {
+  if (window.__adminListInit) return;
+  window.__adminListInit = true;
+
+  const { GitHub, Schemas } = window.AdminUtils;
+  const collection = window.location.pathname.split('/')[2];
+  const schema = Schemas[collection];
+
+  if (!schema) {
+    document.getElementById('page-title').textContent = '未知板块';
+    document.getElementById('list-container').innerHTML =
+      '<p class="p-6 text-red-600 text-center">未找到该板块配置</p>';
+    return;
+  }
+
+  document.getElementById('page-title').textContent = schema.label;
+  document.getElementById('crumb-label').textContent = schema.label;
+  document.title = `${schema.label} · 后台管理`;
+
+  const listContainer = document.getElementById('list-container');
+  const searchInput = document.getElementById('search');
+  let allFiles = [];
+
+  function getFieldValue(data, name) {
+    return data[name] !== undefined ? String(data[name]) : '—';
+  }
+
+  function renderList(files) {
+    if (files.length === 0) {
+      listContainer.innerHTML = '<p class="p-6 text-gray-500 text-center">暂无内容，点击右上角"新增"创建</p>';
+      return;
+    }
+
+    // 根据板块决定显示列
+    let cols = [];
+    if (collection === 'concepts') {
+      cols = [
+        { label: '术语', key: 'term' },
+        { label: '分类', key: 'category' },
+      ];
+    } else if (collection === 'tools') {
+      cols = [
+        { label: '名称', key: 'name' },
+        { label: '分类', key: 'type' },
+        { label: '推荐', key: 'recommended' },
+      ];
+    } else if (collection === 'journals') {
+      cols = [
+        { label: '标题', key: 'title' },
+        { label: '期号', key: 'issue' },
+        { label: '类型', key: 'type' },
+        { label: '日期', key: 'date' },
+      ];
+    } else {
+      cols = [
+        { label: '标题', key: 'title' },
+        { label: '类型/分类', key: schema.fields.find((f) => f.type === 'enum')?.name || 'type' },
+        { label: '日期', key: 'date' },
+      ];
+    }
+
+    let html = '<table class="w-full text-sm"><thead class="bg-paper-dark text-ink"><tr>';
+    cols.forEach((c) => {
+      html += `<th class="text-left px-4 py-3 font-bold">${c.label}</th>`;
+    });
+    html += '<th class="text-right px-4 py-3 font-bold">操作</th></tr></thead><tbody class="divide-y divide-gray-100">';
+
+    files.forEach((f) => {
+      const { data } = window.AdminUtils.Markdown.parse(f.content);
+      html += '<tr class="hover:bg-paper">';
+      cols.forEach((c) => {
+        let val = getFieldValue(data, c.key);
+        if (c.key === 'recommended') val = val === 'true' ? '✓' : '—';
+        html += `<td class="px-4 py-3${c.key === 'title' || c.key === 'term' || c.key === 'name' ? ' font-semibold text-ink' : ' text-gray-600'}">${val}</td>`;
+      });
+      const slug = f.name.replace(/\.md$/, '');
+      html += `<td class="px-4 py-3 text-right whitespace-nowrap">
+        <a href="/admin/${collection}/${slug}" class="text-primary hover:underline mr-3">编辑</a>
+        <button data-slug="${slug}" class="btn-delete text-red-600 hover:underline">删除</button>
+      </td>`;
+      html += '</tr>';
+    });
+
+    html += '</tbody></table>';
+    listContainer.innerHTML = html;
+
+    // 绑定删除
+    listContainer.querySelectorAll('.btn-delete').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const slug = btn.getAttribute('data-slug');
+        if (!confirm(`确定删除「${slug}」？此操作不可撤销。`)) return;
+        try {
+          const path = `${schema.path}/${slug}.md`;
+          const { sha } = await GitHub.getFile(path);
+          await GitHub.deleteFile(path, sha, `删除 ${collection}/${slug}.md`);
+          alert('删除成功');
+          loadFiles();
+        } catch (err) {
+          alert('删除失败：' + err.message);
+        }
+      });
+    });
+  }
+
+  async function loadFiles() {
+    if (!GitHub.isConfigured()) {
+      listContainer.innerHTML =
+        '<p class="p-6 text-center"><a href="/admin/settings/" class="text-primary hover:underline">请先配置 GitHub 仓库信息</a></p>';
+      return;
+    }
+    try {
+      listContainer.innerHTML = '<p class="p-6 text-gray-500 text-center">加载中…</p>';
+      const files = await GitHub.listFiles(schema.path);
+      // 预取内容以解析 frontmatter
+      allFiles = await Promise.all(
+        files.map(async (f) => {
+          const { content } = await GitHub.getFile(`${schema.path}/${f.name}`);
+          return { name: f.name, content };
+        })
+      );
+      renderList(allFiles);
+    } catch (err) {
+      listContainer.innerHTML = `<p class="p-6 text-red-600 text-center">加载失败：${err.message}</p>`;
+    }
+  }
+
+  // 搜索过滤
+  searchInput.addEventListener('input', () => {
+    const q = searchInput.value.trim().toLowerCase();
+    if (!q) {
+      renderList(allFiles);
+      return;
+    }
+    const filtered = allFiles.filter((f) => {
+      const { data } = window.AdminUtils.Markdown.parse(f.content);
+      const searchTarget = Object.values(data).join(' ').toLowerCase();
+      return searchTarget.includes(q);
+    });
+    renderList(filtered);
+  });
+
+  loadFiles();
+})();
+</script>

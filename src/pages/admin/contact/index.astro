@@ -1,0 +1,261 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="联络站编辑 · 后台管理" description="编辑联络站组织表与联系方式。">
+  <section class="max-w-content mx-auto px-4 py-10">
+    <div class="mb-6">
+      <p class="text-sm text-gray-500 mb-1">
+        <a href="/admin/" class="hover:underline">后台首页</a> / 联络站
+      </p>
+      <h1 class="text-3xl font-bold text-ink">联络站编辑</h1>
+      <p class="text-gray-600 text-sm mt-1">编辑中国/国际左翼组织表与联系方式，提交后直接更新 contact.astro。</p>
+    </div>
+
+    <div id="loading" class="bg-white rounded-lg shadow p-6 text-center text-gray-500">
+      加载中…
+    </div>
+
+    <div id="editor" class="hidden space-y-8">
+      <!-- 中国左翼组织表 -->
+      <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-xl font-bold text-ink">🇨🇳 中国公开左翼组织表</h2>
+          <button type="button" id="add-cn" class="px-3 py-1 bg-primary text-white rounded text-sm hover:opacity-90">+ 添加行</button>
+        </div>
+        <div id="cn-table" class="space-y-3"></div>
+      </div>
+
+      <!-- 国际左翼组织表 -->
+      <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-xl font-bold text-ink">🌍 国际左翼组织表</h2>
+          <button type="button" id="add-intl" class="px-3 py-1 bg-primary text-white rounded text-sm hover:opacity-90">+ 添加行</button>
+        </div>
+        <div id="intl-table" class="space-y-3"></div>
+      </div>
+
+      <!-- 联系方式 -->
+      <div class="bg-white rounded-lg shadow p-6">
+        <h2 class="text-xl font-bold text-ink mb-4">📮 联系方式</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-semibold text-ink mb-1">公开邮箱</label>
+            <input id="contact-email" type="email" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-primary" />
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-ink mb-1">Telegram</label>
+            <input id="contact-tg" type="text" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-primary" />
+          </div>
+        </div>
+      </div>
+
+      <!-- 操作按钮 -->
+      <div class="flex gap-3">
+        <button type="button" id="submit-btn" class="px-5 py-2 bg-primary text-white rounded hover:opacity-90 text-sm">提交到 GitHub</button>
+        <button type="button" id="reset-btn" class="px-5 py-2 border border-gray-300 text-ink rounded hover:bg-paper-dark text-sm">重新加载</button>
+      </div>
+    </div>
+  </section>
+</BaseLayout>
+
+<script is:inline src="/admin-utils.js"></script>
+<script is:inline>
+(function () {
+  if (window.__adminContactInit) return;
+  window.__adminContactInit = true;
+
+  const { GitHub } = window.AdminUtils;
+  const FILE_PATH = 'src/pages/contact.astro';
+  let originalContent = '';
+  let currentSha = null;
+
+  const cnTableEl = document.getElementById('cn-table');
+  const intlTableEl = document.getElementById('intl-table');
+
+  function cnRow(name, activity, note) {
+    return `<div class="grid grid-cols-12 gap-2 items-center">
+      <input type="text" placeholder="名称" value="${(name || '').replace(/"/g, '&quot;')}" class="cn-name col-span-4 border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-primary" />
+      <input type="text" placeholder="公开活动形式" value="${(activity || '').replace(/"/g, '&quot;')}" class="cn-activity col-span-4 border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-primary" />
+      <input type="text" placeholder="备注" value="${(note || '').replace(/"/g, '&quot;')}" class="cn-note col-span-3 border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-primary" />
+      <button type="button" class="cn-del col-span-1 text-red-500 hover:text-red-700 text-sm">✕</button>
+    </div>`;
+  }
+
+  function intlRow(name, region, desc) {
+    return `<div class="grid grid-cols-12 gap-2 items-center">
+      <input type="text" placeholder="名称" value="${(name || '').replace(/"/g, '&quot;')}" class="intl-name col-span-4 border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-primary" />
+      <input type="text" placeholder="地区" value="${(region || '').replace(/"/g, '&quot;')}" class="intl-region col-span-3 border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-primary" />
+      <input type="text" placeholder="说明" value="${(desc || '').replace(/"/g, '&quot;')}" class="intl-desc col-span-4 border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-primary" />
+      <button type="button" class="intl-del col-span-1 text-red-500 hover:text-red-700 text-sm">✕</button>
+    </div>`;
+  }
+
+  function bindRowEvents() {
+    document.querySelectorAll('.cn-del').forEach((b) => b.addEventListener('click', (e) => e.target.closest('.grid').remove()));
+    document.querySelectorAll('.intl-del').forEach((b) => b.addEventListener('click', (e) => e.target.closest('.grid').remove()));
+  }
+
+  document.getElementById('add-cn').addEventListener('click', () => {
+    cnTableEl.insertAdjacentHTML('beforeend', cnRow('', '', ''));
+    bindRowEvents();
+  });
+
+  document.getElementById('add-intl').addEventListener('click', () => {
+    intlTableEl.insertAdjacentHTML('beforeend', intlRow('', '', ''));
+    bindRowEvents();
+  });
+
+  // 解析中国组织表
+  function parseCnTable(html) {
+    const rows = [];
+    const tbodyMatch = html.match(/中国公开左翼组织表[\s\S]*?<tbody[^>]*>([\s\S]*?)<\/tbody>/);
+    if (!tbodyMatch) return rows;
+    const trMatches = tbodyMatch[1].matchAll(/<tr>([\s\S]*?)<\/tr>/g);
+    for (const m of trMatches) {
+      const tds = [...m[1].matchAll(/<td[^>]*>([\s\S]*?)<\/td>/g)].map((t) => t[1].replace(/<[^>]+>/g, '').trim());
+      if (tds.length >= 3) rows.push({ name: tds[0], activity: tds[1], note: tds[2] });
+    }
+    return rows;
+  }
+
+  // 解析国际组织表
+  function parseIntlTable(html) {
+    const rows = [];
+    const tbodyMatch = html.match(/国际左翼组织表[\s\S]*?<tbody[^>]*>([\s\S]*?)<\/tbody>/);
+    if (!tbodyMatch) return rows;
+    const trMatches = tbodyMatch[1].matchAll(/<tr>([\s\S]*?)<\/tr>/g);
+    for (const m of trMatches) {
+      const tds = [...m[1].matchAll(/<td[^>]*>([\s\S]*?)<\/td>/g)].map((t) => t[1].replace(/<[^>]+>/g, '').trim());
+      if (tds.length >= 3) rows.push({ name: tds[0], region: tds[1], desc: tds[2] });
+    }
+    return rows;
+  }
+
+  // 解析联系方式
+  function parseContact(html) {
+    const emailMatch = html.match(/公开邮箱[\s\S]*?<code[^>]*>([\s\S]*?)<\/code>/);
+    const tgMatch = html.match(/Telegram[\s\S]*?<code[^>]*>([\s\S]*?)<\/code>/);
+    return {
+      email: emailMatch ? emailMatch[1].trim() : '',
+      telegram: tgMatch ? tgMatch[1].trim() : '',
+    };
+  }
+
+  // 重建中国组织表 tbody
+  function buildCnTbody(rows) {
+    return rows.map((r) => `            <tr>
+              <td class="px-4 py-3">${r.name}</td>
+              <td class="px-4 py-3 text-gray-600">${r.activity}</td>
+              <td class="px-4 py-3 text-gray-600">${r.note}</td>
+            </tr>`).join('\n');
+  }
+
+  // 重建国际组织表 tbody
+  function buildIntlTbody(rows) {
+    return rows.map((r) => `            <tr>
+              <td class="px-4 py-3">${r.name}</td>
+              <td class="px-4 py-3 text-gray-600">${r.region}</td>
+              <td class="px-4 py-3 text-gray-500">${r.desc}</td>
+            </tr>`).join('\n');
+  }
+
+  function escapeHtml(s) {
+    const div = document.createElement('div');
+    div.textContent = s;
+    return div.innerHTML;
+  }
+
+  async function loadFile() {
+    const loadingEl = document.getElementById('loading');
+    const editorEl = document.getElementById('editor');
+    if (!GitHub.isConfigured()) {
+      loadingEl.innerHTML = '<a href="/admin/settings/" class="text-primary hover:underline">请先配置 GitHub 仓库信息</a>';
+      return;
+    }
+    try {
+      loadingEl.textContent = '加载中…';
+      const { content, sha } = await GitHub.getFile(FILE_PATH);
+      originalContent = content;
+      currentSha = sha;
+
+      const cnRows = parseCnTable(content);
+      const intlRows = parseIntlTable(content);
+      const contact = parseContact(content);
+
+      cnTableEl.innerHTML = cnRows.map((r) => cnRow(r.name, r.activity, r.note)).join('');
+      intlTableEl.innerHTML = intlRows.map((r) => intlRow(r.name, r.region, r.desc)).join('');
+      document.getElementById('contact-email').value = contact.email;
+      document.getElementById('contact-tg').value = contact.telegram;
+
+      bindRowEvents();
+      loadingEl.classList.add('hidden');
+      editorEl.classList.remove('hidden');
+    } catch (err) {
+      loadingEl.innerHTML = `<p class="text-red-600">加载失败：${err.message}</p>`;
+    }
+  }
+
+  document.getElementById('submit-btn').addEventListener('click', async () => {
+    const btn = document.getElementById('submit-btn');
+    btn.disabled = true;
+    btn.textContent = '提交中…';
+    try {
+      // 收集数据
+      const cnRows = [...cnTableEl.querySelectorAll('.grid')].map((row) => ({
+        name: row.querySelector('.cn-name').value,
+        activity: row.querySelector('.cn-activity').value,
+        note: row.querySelector('.cn-note').value,
+      })).filter((r) => r.name);
+
+      const intlRows = [...intlTableEl.querySelectorAll('.grid')].map((row) => ({
+        name: row.querySelector('.intl-name').value,
+        region: row.querySelector('.intl-region').value,
+        desc: row.querySelector('.intl-desc').value,
+      })).filter((r) => r.name);
+
+      const email = document.getElementById('contact-email').value;
+      const telegram = document.getElementById('contact-tg').value;
+
+      let newContent = originalContent;
+
+      // 替换中国组织表 tbody
+      newContent = newContent.replace(
+        /(中国公开左翼组织表[\s\S]*?<tbody[^>]*>)([\s\S]*?)(<\/tbody>)/,
+        `$1\n${buildCnTbody(cnRows)}\n          $3`
+      );
+
+      // 替换国际组织表 tbody
+      newContent = newContent.replace(
+        /(国际左翼组织表[\s\S]*?<tbody[^>]*>)([\s\S]*?)(<\/tbody>)/,
+        `$1\n${buildIntlTbody(intlRows)}\n          $3`
+      );
+
+      // 替换邮箱
+      newContent = newContent.replace(
+        /(公开邮箱[\s\S]*?<code[^>]*>)([\s\S]*?)(<\/code>)/,
+        `$1${email}$3`
+      );
+
+      // 替换 Telegram
+      newContent = newContent.replace(
+        /(Telegram[\s\S]*?<code[^>]*>)([\s\S]*?)(<\/code>)/,
+        `$1${telegram}$3`
+      );
+
+      await GitHub.putFile(FILE_PATH, newContent, '更新联络站组织表与联系方式', currentSha);
+      alert('提交成功！');
+      loadFile();
+    } catch (err) {
+      alert('提交失败：' + err.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '提交到 GitHub';
+    }
+  });
+
+  document.getElementById('reset-btn').addEventListener('click', loadFile);
+
+  loadFile();
+})();
+</script>

@@ -1,0 +1,241 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import { getCollection } from 'astro:content';
+
+const collectionKeys = ['guide', 'articles', 'concepts', 'art', 'journals', 'tools'];
+
+export async function getStaticPaths() {
+  const paths = [];
+  for (const collection of collectionKeys) {
+    // "new" 路径用于新增
+    paths.push({ params: { collection, slug: 'new' } });
+    // 已有内容的编辑路径
+    try {
+      const items = await getCollection(collection);
+      for (const item of items) {
+        paths.push({ params: { collection, slug: item.slug } });
+      }
+    } catch (e) {
+      // 集合可能暂时为空，忽略
+    }
+  }
+  return paths;
+}
+
+const { collection, slug } = Astro.params;
+const isNew = slug === 'new';
+---
+
+<BaseLayout title={`${isNew ? '新增' : '编辑'} · 后台管理`} description="编辑内容并提交到 GitHub。">
+  <section class="max-w-content mx-auto px-4 py-10">
+    <div class="mb-6">
+      <p class="text-sm text-gray-500 mb-1">
+        <a href="/admin/" class="hover:underline">后台首页</a> /
+        <a id="crumb-collection" href="/admin/${collection}/" class="hover:underline">板块</a> /
+        <span>${isNew ? '新增' : '编辑'}</span>
+      </p>
+      <h1 id="page-title" class="text-3xl font-bold text-ink">加载中…</h1>
+    </div>
+
+    <div id="form-container" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <p class="col-span-full text-gray-500">加载中…</p>
+    </div>
+  </section>
+</BaseLayout>
+
+<script is:inline src="/admin-utils.js"></script>
+<script is:inline>
+(function () {
+  if (window.__adminEditInit) return;
+  window.__adminEditInit = true;
+
+  const { GitHub, Schemas, Markdown, Utils } = window.AdminUtils;
+  const pathParts = window.location.pathname.split('/').filter(Boolean);
+  const collection = pathParts[1];
+  const slug = pathParts[2];
+  const isNew = slug === 'new';
+  const schema = Schemas[collection];
+
+  if (!schema) {
+    document.getElementById('page-title').textContent = '未知板块';
+    return;
+  }
+
+  document.getElementById('page-title').textContent = `${isNew ? '新增' : '编辑'}${schema.label}`;
+  document.getElementById('crumb-collection').textContent = schema.label;
+
+  const formContainer = document.getElementById('form-container');
+  let currentSha = null;
+
+  // 渲染表单
+  function renderForm(fields, body) {
+    let html = '<form id="content-form" class="space-y-4">';
+    fields.forEach((f) => {
+      html += '<div>';
+      html += `<label class="block text-sm font-semibold text-ink mb-1">${f.label}${f.required ? '<span class="text-primary ml-1">*</span>' : ''}</label>`;
+      const val = f.value !== undefined ? f.value : '';
+      if (f.type === 'string' || f.type === 'url') {
+        const type = f.type === 'url' ? 'url' : 'text';
+        html += `<input type="${type}" name="${f.name}" data-type="${f.type}" data-optional="${f.optional ? 'true' : 'false'}" value="${String(val).replace(/"/g, '&quot;')}" placeholder="${f.optional ? '可选' : ''}" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-primary" />`;
+      } else if (f.type === 'text') {
+        html += `<textarea name="${f.name}" data-type="text" data-optional="${f.optional ? 'true' : 'false'}" rows="3" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-primary">${val}</textarea>`;
+      } else if (f.type === 'date') {
+        html += `<input type="date" name="${f.name}" data-type="date" data-optional="false" value="${val}" class="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-primary" />`;
+      } else if (f.type === 'number') {
+        html += `<input type="number" name="${f.name}" data-type="number" data-optional="false" value="${val}" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-primary" />`;
+      } else if (f.type === 'enum') {
+        html += `<select name="${f.name}" data-type="enum" data-optional="false" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-primary bg-white">`;
+        f.options.forEach((opt) => {
+          html += `<option value="${opt}" ${opt === val ? 'selected' : ''}>${opt}</option>`;
+        });
+        html += '</select>';
+      } else if (f.type === 'tags') {
+        html += `<input type="text" name="${f.name}" data-type="tags" data-optional="true" value="${String(val).replace(/"/g, '&quot;')}" placeholder="标签1, 标签2" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-primary" />`;
+      } else if (f.type === 'boolean') {
+        html += `<label class="inline-flex items-center gap-2 cursor-pointer"><input type="checkbox" name="${f.name}" data-type="boolean" data-optional="false" ${val ? 'checked' : ''} class="w-4 h-4 accent-primary" /><span class="text-sm text-gray-600">勾选表示启用</span></label>`;
+      }
+      html += '</div>';
+    });
+
+    // 正文
+    html += '<div>';
+    html += '<label class="block text-sm font-semibold text-ink mb-1">正文内容（Markdown）</label>';
+    html += `<textarea name="__body" data-type="body" rows="10" placeholder="在此输入 Markdown 正文……" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-primary font-mono text-sm">${body || ''}</textarea>`;
+    html += '</div>';
+    html += '</form>';
+
+    // 预览 + 操作区
+    html += '<div class="lg:sticky lg:top-24 h-fit">';
+    html += '<div class="flex items-center justify-between mb-2"><h2 class="text-lg font-bold text-ink">预览</h2><span id="filename" class="text-xs text-gray-500 font-mono"></span></div>';
+    html += '<textarea id="preview" readonly rows="20" class="w-full border border-gray-300 rounded p-4 bg-paper-dark font-mono text-xs leading-relaxed focus:outline-none"></textarea>';
+    html += '<div class="flex flex-wrap gap-3 mt-4">';
+    html += '<button type="button" id="submit-btn" class="px-5 py-2 bg-primary text-white rounded hover:opacity-90 text-sm">提交到 GitHub</button>';
+    html += '<button type="button" id="copy-btn" class="px-5 py-2 bg-ink text-white rounded hover:opacity-90 text-sm">复制</button>';
+    html += '<button type="button" id="download-btn" class="px-5 py-2 border border-gray-300 text-ink rounded hover:bg-paper-dark text-sm">下载 .md</button>';
+    html += '</div>';
+    html += '<p class="mt-4 text-xs text-gray-500">提交信息将显示为：<span id="commit-msg" class="font-mono"></span></p>';
+    html += '</div>';
+
+    formContainer.innerHTML = html;
+    bindEvents();
+    updatePreview();
+  }
+
+  function collectFields() {
+    const form = document.getElementById('content-form');
+    const fields = schema.fields.map((f) => {
+      const el = form.querySelector(`[name="${f.name}"]`);
+      let value;
+      if (f.type === 'boolean') {
+        value = el.checked;
+      } else {
+        value = el.value;
+      }
+      return { name: f.name, type: f.type, optional: f.optional, required: f.required, value };
+    });
+    const bodyEl = form.querySelector('[data-type="body"]');
+    return { fields, body: bodyEl ? bodyEl.value : '' };
+  }
+
+  function updatePreview() {
+    const { fields, body } = collectFields();
+    const md = Markdown.generate(fields, body);
+    document.getElementById('preview').value = md;
+
+    // 文件名
+    const slugField = schema.slugField;
+    const slugEl = document.getElementById('content-form').querySelector(`[name="${slugField}"]`);
+    const slugVal = slugEl ? slugEl.value : '';
+    const filename = `${Utils.slugify(slugVal) || 'untitled'}.md`;
+    document.getElementById('filename').textContent = filename;
+    document.getElementById('commit-msg').textContent = `${isNew ? '新增' : '更新'} ${collection}/${filename}`;
+  }
+
+  function bindEvents() {
+    const form = document.getElementById('content-form');
+    form.addEventListener('input', updatePreview);
+    form.addEventListener('change', updatePreview);
+
+    document.getElementById('submit-btn').addEventListener('click', async () => {
+      if (!GitHub.isConfigured()) {
+        alert('请先在设置页配置 GitHub 仓库信息');
+        window.location.href = '/admin/settings/';
+        return;
+      }
+      const btn = document.getElementById('submit-btn');
+      btn.disabled = true;
+      btn.textContent = '提交中…';
+      try {
+        const { fields, body } = collectFields();
+        const md = Markdown.generate(fields, body);
+        const slugField = schema.slugField;
+        const slugEl = form.querySelector(`[name="${slugField}"]`);
+        const filename = `${Utils.slugify(slugEl.value) || 'untitled'}.md`;
+        const path = `${schema.path}/${filename}`;
+        const msg = `${isNew ? '新增' : '更新'} ${collection}/${filename}`;
+        await GitHub.putFile(path, md, msg, currentSha);
+        alert('提交成功！Cloudflare 将自动重新构建部署。');
+        window.location.href = `/admin/${collection}/`;
+      } catch (err) {
+        alert('提交失败：' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '提交到 GitHub';
+      }
+    });
+
+    document.getElementById('copy-btn').addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(document.getElementById('preview').value);
+        const btn = document.getElementById('copy-btn');
+        const old = btn.textContent;
+        btn.textContent = '✓ 已复制';
+        setTimeout(() => (btn.textContent = old), 1500);
+      } catch (e) {
+        document.getElementById('preview').select();
+        document.execCommand('copy');
+      }
+    });
+
+    document.getElementById('download-btn').addEventListener('click', () => {
+      const filename = document.getElementById('filename').textContent;
+      const blob = new Blob([document.getElementById('preview').value], { type: 'text/markdown;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    });
+  }
+
+  // 初始化
+  if (isNew) {
+    const fields = Utils.getDefaultFields(collection);
+    // 日期默认今天
+    const dateField = fields.find((f) => f.type === 'date');
+    if (dateField) dateField.value = Utils.today();
+    renderForm(fields, '');
+  } else {
+    // 编辑模式：加载文件
+    (async () => {
+      try {
+        if (!GitHub.isConfigured()) {
+          formContainer.innerHTML = '<p class="col-span-full text-center"><a href="/admin/settings/" class="text-primary hover:underline">请先配置 GitHub 仓库信息</a></p>';
+          return;
+        }
+        const path = `${schema.path}/${slug}.md`;
+        const { content, sha } = await GitHub.getFile(path);
+        currentSha = sha;
+        const { data, body } = Markdown.parse(content);
+        const fields = Utils.fieldsFromData(collection, data);
+        renderForm(fields, body);
+      } catch (err) {
+        formContainer.innerHTML = `<p class="col-span-full text-red-600 text-center">加载失败：${err.message}</p>`;
+      }
+    })();
+  }
+})();
+</script>
