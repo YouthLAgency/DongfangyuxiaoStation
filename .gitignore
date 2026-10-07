@@ -30,3 +30,7 @@ pnpm-debug.log*
 # 便携版 Node（不提交）
 node-portable/
 node-portable.zip
+
+# 临时批处理脚本
+*.bat
+*.cmd
