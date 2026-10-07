@@ -2,9 +2,8 @@
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 import { getCollection } from 'astro:content';
 
-const collectionKeys = ['guide', 'articles', 'concepts', 'art', 'journals', 'tools'];
-
 export async function getStaticPaths() {
+  const collectionKeys = ['guide', 'articles', 'concepts', 'art', 'journals', 'tools'];
   const paths = [];
   for (const collection of collectionKeys) {
     // "new" 路径用于新增
