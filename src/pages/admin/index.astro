@@ -1,0 +1,539 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+
+// 内容集合字段配置——必须与 src/content/config.ts 中的 Zod schema 一一对应
+const collections = [
+  {
+    key: 'guide',
+    label: '入门指南',
+    slugField: 'title',
+    fields: [
+      { name: 'title', label: '标题', type: 'string', required: true },
+      { name: 'description', label: '简介', type: 'text', required: true },
+      { name: 'author', label: '作者', type: 'string', default: '青联社' },
+      { name: 'date', label: '日期', type: 'date', required: true },
+      {
+        name: 'type',
+        label: '类型',
+        type: 'enum',
+        options: ['阅读路径', '概念入门', '推荐书单', '社员招募', '通讯员征集'],
+        default: '阅读路径',
+      },
+      { name: 'order', label: '排序', type: 'number', default: 0 },
+      { name: 'tags', label: '标签（逗号分隔）', type: 'tags' },
+      { name: 'draft', label: '草稿', type: 'boolean', default: false },
+    ],
+  },
+  {
+    key: 'articles',
+    label: '理论文章',
+    slugField: 'title',
+    fields: [
+      { name: 'title', label: '标题', type: 'string', required: true },
+      { name: 'description', label: '简介', type: 'text', required: true },
+      { name: 'author', label: '作者', type: 'string', required: true },
+      { name: 'date', label: '日期', type: 'date', required: true },
+      {
+        name: 'category',
+        label: '分类',
+        type: 'enum',
+        options: ['经典著作', '概念词典', '国际共运史', '专题文章', '时事评论'],
+        default: '专题文章',
+      },
+      {
+        name: 'source',
+        label: '来源',
+        type: 'enum',
+        options: ['原创', '译文', '转载'],
+        default: '原创',
+      },
+      { name: 'tags', label: '标签（逗号分隔）', type: 'tags' },
+      { name: 'draft', label: '草稿', type: 'boolean', default: false },
+    ],
+  },
+  {
+    key: 'art',
+    label: '文艺作品',
+    slugField: 'title',
+    fields: [
+      { name: 'title', label: '标题', type: 'string', required: true },
+      { name: 'description', label: '简介', type: 'text', required: true },
+      { name: 'author', label: '作者', type: 'string', required: true },
+      { name: 'date', label: '日期', type: 'date', required: true },
+      {
+        name: 'type',
+        label: '类型',
+        type: 'enum',
+        options: ['诗歌', '散文', '小说', '评论', '音乐', '美术', '戏剧'],
+        default: '诗歌',
+      },
+      { name: 'bilibili', label: 'Bilibili BV号（可选）', type: 'string', optional: true },
+      { name: 'tags', label: '标签（逗号分隔）', type: 'tags' },
+      { name: 'draft', label: '草稿', type: 'boolean', default: false },
+    ],
+  },
+  {
+    key: 'journals',
+    label: '期刊通讯',
+    slugField: 'title',
+    fields: [
+      { name: 'title', label: '标题', type: 'string', required: true },
+      { name: 'issue', label: '期号', type: 'string', required: true },
+      { name: 'description', label: '简介', type: 'text', required: true },
+      { name: 'date', label: '日期', type: 'date', required: true },
+      {
+        name: 'type',
+        label: '类型',
+        type: 'enum',
+        options: ['周刊', '月刊', '文艺报', '特刊'],
+        default: '周刊',
+      },
+      { name: 'downloadUrl', label: '下载链接（可选）', type: 'url', optional: true },
+      { name: 'onlineReadable', label: '开放在线阅读', type: 'boolean', default: true },
+      { name: 'tags', label: '标签（逗号分隔）', type: 'tags' },
+      { name: 'draft', label: '草稿', type: 'boolean', default: false },
+    ],
+  },
+  {
+    key: 'concepts',
+    label: '概念词典',
+    slugField: 'term',
+    fields: [
+      { name: 'term', label: '术语', type: 'string', required: true },
+      { name: 'description', label: '释义', type: 'text', required: true },
+      {
+        name: 'category',
+        label: '分类',
+        type: 'enum',
+        options: ['哲学', '政治经济学', '科学社会主义', '党史', '人物'],
+        default: '哲学',
+      },
+      { name: 'tags', label: '标签（逗号分隔）', type: 'tags' },
+      { name: 'draft', label: '草稿', type: 'boolean', default: false },
+    ],
+  },
+  {
+    key: 'tools',
+    label: '左翼工具',
+    slugField: 'name',
+    fields: [
+      { name: 'name', label: '名称', type: 'string', required: true },
+      { name: 'description', label: '简介', type: 'text', required: true },
+      {
+        name: 'type',
+        label: '分类',
+        type: 'enum',
+        options: ['加密工具', '安全指南', '常用网站', '学习资源'],
+        default: '学习资源',
+      },
+      { name: 'url', label: '官网链接（可选）', type: 'url', optional: true },
+      { name: 'recommended', label: '本站推荐', type: 'boolean', default: false },
+      { name: 'tags', label: '标签（逗号分隔）', type: 'tags' },
+      { name: 'draft', label: '草稿', type: 'boolean', default: false },
+    ],
+  },
+];
+---
+
+<BaseLayout title="内容管理平台 · 东方欲晓" description="图形化内容录入平台，生成可提交到 src/content/ 的 Markdown 文件。">
+  <section class="max-w-content mx-auto px-4 py-10">
+    <header class="mb-8">
+      <p class="text-sm text-gray-500 mb-2">
+        <a href="/" class="hover:underline">首页</a> / 内容管理
+      </p>
+      <h1 class="text-3xl font-bold mb-2 text-ink">内容管理平台</h1>
+      <p class="text-gray-600">
+        录入各板块内容，自动生成符合 schema 的 Markdown 文件，可下载或一键复制后提交到
+        <code class="bg-paper-dark px-2 py-0.5 rounded text-xs">src/content/</code>
+        对应目录。
+      </p>
+    </header>
+
+    <!-- 集合切换 Tabs -->
+    <div class="flex flex-wrap gap-2 mb-6 border-b border-gray-200 pb-2">
+      {
+        collections.map((c, i) => (
+          <button
+            type="button"
+            data-tab={c.key}
+            class:list={[
+              'tab-btn px-4 py-2 rounded-t text-sm font-semibold transition-colors border-b-2 hover:no-underline',
+              i === 0
+                ? 'text-primary border-primary'
+                : 'text-gray-500 border-transparent hover:text-ink',
+            ]}
+          >
+            {c.label}
+          </button>
+        ))
+      }
+    </div>
+
+    <!-- 表单区 -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {
+        collections.map((c, i) => (
+          <form
+            data-form={c.key}
+            data-slug-field={c.slugField}
+            class:list={['space-y-4', i !== 0 && 'hidden']}
+          >
+            {
+              c.fields.map((f) => (
+                <div>
+                  <label class="block text-sm font-semibold text-ink mb-1">
+                    {f.label}
+                    {f.required && <span class="text-primary ml-1">*</span>}
+                  </label>
+
+                  {f.type === 'string' && (
+                    <input
+                      type="text"
+                      name={f.name}
+                      data-type="string"
+                      data-optional={f.optional ? 'true' : 'false'}
+                      value={f.default ?? ''}
+                      class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-primary"
+                    />
+                  )}
+
+                  {f.type === 'text' && (
+                    <textarea
+                      name={f.name}
+                      data-type="text"
+                      data-optional={f.optional ? 'true' : 'false'}
+                      rows="3"
+                      class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-primary"
+                    ></textarea>
+                  )}
+
+                  {f.type === 'date' && (
+                    <input
+                      type="date"
+                      name={f.name}
+                      data-type="date"
+                      data-optional="false"
+                      class="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-primary"
+                    />
+                  )}
+
+                  {f.type === 'number' && (
+                    <input
+                      type="number"
+                      name={f.name}
+                      data-type="number"
+                      data-optional="false"
+                      value={f.default ?? 0}
+                      class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-primary"
+                    />
+                  )}
+
+                  {f.type === 'url' && (
+                    <input
+                      type="url"
+                      name={f.name}
+                      data-type="url"
+                      data-optional={f.optional ? 'true' : 'false'}
+                      placeholder="https://..."
+                      class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-primary"
+                    />
+                  )}
+
+                  {f.type === 'enum' && (
+                    <select
+                      name={f.name}
+                      data-type="enum"
+                      data-optional="false"
+                      class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-primary bg-white"
+                    >
+                      {f.options.map((opt) => (
+                        <option value={opt} selected={opt === f.default}>{opt}</option>
+                      ))}
+                    </select>
+                  )}
+
+                  {f.type === 'tags' && (
+                    <input
+                      type="text"
+                      name={f.name}
+                      data-type="tags"
+                      data-optional="true"
+                      placeholder="标签1, 标签2, 标签3"
+                      class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-primary"
+                    />
+                  )}
+
+                  {f.type === 'boolean' && (
+                    <label class="inline-flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        name={f.name}
+                        data-type="boolean"
+                        data-optional="false"
+                        checked={f.default === true}
+                        class="w-4 h-4 accent-primary"
+                      />
+                      <span class="text-sm text-gray-600">勾选表示启用</span>
+                    </label>
+                  )}
+                </div>
+              ))
+            }
+
+            <!-- 正文内容 -->
+            <div>
+              <label class="block text-sm font-semibold text-ink mb-1">正文内容（Markdown）</label>
+              <textarea
+                name="__body"
+                data-type="body"
+                rows="10"
+                placeholder="在此输入 Markdown 正文……"
+                class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-primary font-mono text-sm"
+              ></textarea>
+            </div>
+          </form>
+        ))
+      }
+
+      <!-- 预览区 -->
+      <div class="lg:sticky lg:top-24 h-fit">
+        <div class="flex items-center justify-between mb-2">
+          <h2 class="text-lg font-bold text-ink">生成的 Markdown</h2>
+          <span id="filename" class="text-xs text-gray-500 font-mono"></span>
+        </div>
+        <textarea
+          id="preview"
+          readonly
+          rows="24"
+          class="w-full border border-gray-300 rounded p-4 bg-paper-dark font-mono text-xs leading-relaxed focus:outline-none"
+        ></textarea>
+        <div class="flex flex-wrap gap-3 mt-4">
+          <button
+            type="button"
+            id="copy-btn"
+            class="px-5 py-2 bg-ink text-white rounded hover:opacity-90 text-sm hover:no-underline"
+          >
+            复制 Markdown
+          </button>
+          <button
+            type="button"
+            id="download-btn"
+            class="px-5 py-2 bg-primary text-white rounded hover:opacity-90 text-sm hover:no-underline"
+          >
+            ⬇ 下载 .md 文件
+          </button>
+          <button
+            type="button"
+            id="reset-btn"
+            class="px-5 py-2 border border-gray-300 text-ink rounded hover:bg-paper-dark text-sm hover:no-underline"
+          >
+            清空表单
+          </button>
+        </div>
+        <p class="mt-4 text-xs text-gray-500 leading-relaxed">
+          ⓘ 生成的文件需放入 <code class="bg-paper-dark px-1.5 py-0.5 rounded">src/content/{'<集合名>'}/</code> 目录。
+          封面图（cover）字段需手动放入 <code class="bg-paper-dark px-1.5 py-0.5 rounded">src/content/{'<集合名>'}/</code> 后在 frontmatter 中引用。
+        </p>
+      </div>
+    </div>
+  </section>
+</BaseLayout>
+
+<script is:inline>
+(function () {
+  if (window.__adminInit) return;
+  window.__adminInit = true;
+
+  const tabs = document.querySelectorAll('.tab-btn');
+  const forms = document.querySelectorAll('form[data-form]');
+  const preview = document.getElementById('preview');
+  const filenameEl = document.getElementById('filename');
+  const copyBtn = document.getElementById('copy-btn');
+  const downloadBtn = document.getElementById('download-btn');
+  const resetBtn = document.getElementById('reset-btn');
+
+  let activeKey = forms[0].getAttribute('data-form');
+
+  function getActiveForm() {
+    return document.querySelector(`form[data-form="${activeKey}"]`);
+  }
+
+  function switchTab(key) {
+    activeKey = key;
+    tabs.forEach((t) => {
+      if (t.getAttribute('data-tab') === key) {
+        t.classList.add('text-primary', 'border-primary');
+        t.classList.remove('text-gray-500', 'border-transparent');
+      } else {
+        t.classList.remove('text-primary', 'border-primary');
+        t.classList.add('text-gray-500', 'border-transparent');
+      }
+    });
+    forms.forEach((f) => {
+      if (f.getAttribute('data-form') === key) {
+        f.classList.remove('hidden');
+      } else {
+        f.classList.add('hidden');
+      }
+    });
+    updatePreview();
+  }
+
+  tabs.forEach((t) => {
+    t.addEventListener('click', () => switchTab(t.getAttribute('data-tab')));
+  });
+
+  // YAML 值转义
+  function yamlString(v) {
+    if (v === undefined || v === null) return '';
+    const s = String(v);
+    const needsQuote = /[:#&*!|>'"%@`,\[\]{}]/.test(s) || /^\s|\s$/.test(s) || s === '' || /^[0-9]/.test(s);
+    if (needsQuote) {
+      return '"' + s.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"';
+    }
+    return s;
+  }
+
+  function serializeField(name, value, type) {
+    if (type === 'boolean') {
+      return `${name}: ${value ? 'true' : 'false'}`;
+    }
+    if (type === 'number') {
+      return `${name}: ${value}`;
+    }
+    if (type === 'tags') {
+      const arr = String(value || '')
+        .split(/[,，]/)
+        .map((s) => s.trim())
+        .filter(Boolean);
+      if (arr.length === 0) return `${name}: []`;
+      return `${name}:\n` + arr.map((t) => `  - ${yamlString(t)}`).join('\n');
+    }
+    // string / text / date / url / enum
+    return `${name}: ${yamlString(value)}`;
+  }
+
+  function generateMarkdown(form) {
+    const fields = form.querySelectorAll('[data-type]');
+    const lines = [];
+    lines.push('---');
+
+    fields.forEach((el) => {
+      const name = el.name;
+      const type = el.getAttribute('data-type');
+      const optional = el.getAttribute('data-optional') === 'true';
+
+      let value;
+      if (type === 'boolean') {
+        value = el.checked;
+      } else if (type === 'body') {
+        return; // 正文单独处理
+      } else {
+        value = el.value;
+      }
+
+      // 可选字段为空则跳过
+      if (optional && (value === '' || value === undefined || value === null)) {
+        return;
+      }
+
+      // 必填字段为空则给出占位提示
+      if (!optional && (value === '' || value === undefined || value === null) && type !== 'boolean') {
+        lines.push(`# ⚠ ${name}: （必填，待填写）`);
+        return;
+      }
+
+      lines.push(serializeField(name, value, type));
+    });
+
+    lines.push('---');
+
+    const bodyEl = form.querySelector('[data-type="body"]');
+    const body = bodyEl ? bodyEl.value : '';
+    if (body.trim()) {
+      lines.push('');
+      lines.push(body);
+    }
+
+    return lines.join('\n');
+  }
+
+  function slugify(text) {
+    return String(text || '')
+      .trim()
+      .replace(/\s+/g, '-')
+      .replace(/[\\/:*?"<>|]/g, '')
+      .toLowerCase();
+  }
+
+  function getFilename(form) {
+    const slugField = form.getAttribute('data-slug-field');
+    const slugEl = form.querySelector(`[name="${slugField}"]`);
+    const slug = slugEl ? slugify(slugEl.value) : 'untitled';
+    const collection = form.getAttribute('data-form');
+    return `${slug || 'untitled'}.md`;
+  }
+
+  function updatePreview() {
+    const form = getActiveForm();
+    if (!form) return;
+    preview.value = generateMarkdown(form);
+    filenameEl.textContent = getFilename(form);
+  }
+
+  // 监听所有表单输入
+  forms.forEach((form) => {
+    form.addEventListener('input', updatePreview);
+    form.addEventListener('change', updatePreview);
+  });
+
+  // 复制
+  copyBtn.addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(preview.value);
+      const old = copyBtn.textContent;
+      copyBtn.textContent = '✓ 已复制';
+      setTimeout(() => (copyBtn.textContent = old), 1500);
+    } catch (e) {
+      preview.select();
+      document.execCommand('copy');
+    }
+  });
+
+  // 下载
+  downloadBtn.addEventListener('click', () => {
+    const form = getActiveForm();
+    const filename = getFilename(form);
+    const blob = new Blob([preview.value], { type: 'text/markdown;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+
+  // 清空
+  resetBtn.addEventListener('click', () => {
+    const form = getActiveForm();
+    form.reset();
+    // 重置后恢复默认值（select 的 default option）
+    form.querySelectorAll('select').forEach((sel) => {
+      const opt = sel.querySelector('option[selected]');
+      if (opt) sel.value = opt.value;
+    });
+    updatePreview();
+  });
+
+  // 初始化：日期默认今天
+  const today = new Date().toISOString().slice(0, 10);
+  forms.forEach((form) => {
+    const dateInput = form.querySelector('[data-type="date"]');
+    if (dateInput && !dateInput.value) dateInput.value = today;
+  });
+
+  updatePreview();
+})();
+</script>
