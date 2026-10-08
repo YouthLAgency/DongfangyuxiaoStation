@@ -2,15 +2,21 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { getCollection } from 'astro:content';
 
-const journals = (await getCollection('journals', ({ data }) => !data.draft)).sort(
+const allJournals = (await getCollection('journals', ({ data }) => !data.draft)).sort(
   (a, b) => b.data.date.valueOf() - a.data.date.valueOf()
 );
 
-const latest = journals[0];
-const others = journals.slice(1);
+// 按类型分组
+const typeOrder = ['周刊', '月刊', '文艺报', '特刊'];
+const grouped: Record<string, typeof allJournals> = {};
+for (const type of typeOrder) {
+  grouped[type] = allJournals.filter((j) => j.data.type === type);
+}
+
+const latest = allJournals[0];
 ---
 
-<BaseLayout title="★ 期刊通讯" description="《真理周刊》等电子刊物——网上阅读、PDF 下载、订阅与征稿。">
+<BaseLayout title="★ 期刊通讯" description="《真理周刊》《真理月刊》等电子刊物——网上阅读、PDF 下载、订阅与征稿。">
   <section class="bg-gold bg-opacity-20 border-y border-gold">
     <div class="max-w-content mx-auto px-4 py-10">
       <div class="flex items-center gap-2 text-sm text-gold-dark font-bold mb-2">
@@ -18,13 +24,13 @@ const others = journals.slice(1);
       </div>
       <h1 class="text-4xl font-bold mb-3">期刊通讯</h1>
       <p class="text-gray-700 max-w-2xl">
-        《真理周刊》《文艺报》等电子刊物——网上阅读、PDF 下载（外链）、邮件订阅与征稿通道。
+        《真理周刊》《真理月刊》《文艺报》等电子刊物——网上阅读、PDF 下载、邮件订阅与征稿通道。
       </p>
     </div>
   </section>
 
   <section class="max-w-content mx-auto px-4 py-12">
-    {/* 本期 */}
+    {/* 最新一期 */}
     {latest && (
       <div class="mb-12">
         <div class="flex items-center gap-2 mb-4">
@@ -36,7 +42,7 @@ const others = journals.slice(1);
             <div class="bg-gradient-to-br from-primary to-primary-dark text-white p-8 flex items-center justify-center">
               <div class="text-center">
                 <p class="text-xs tracking-widest mb-2">DONGFANG YUXIAO</p>
-                <p class="text-2xl font-bold mb-1">真理周刊</p>
+                <p class="text-2xl font-bold mb-1">{latest.data.type}</p>
                 <p class="text-sm text-red-100">{latest.data.issue}</p>
                 <div class="mt-4 h-px w-12 bg-gold mx-auto"></div>
                 <p class="mt-4 text-xs text-red-100">{latest.data.date.toLocaleDateString('zh-CN')}</p>
@@ -69,38 +75,45 @@ const others = journals.slice(1);
       </div>
     )}
 
-    {/* 过往期刊 */}
-    {others.length > 0 && (
-      <div class="mb-12">
-        <h2 class="text-2xl font-bold mb-4 border-l-4 border-gold pl-3">过往期刊</h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {others.map((post) => (
-            <a
-              href={`/journal/${post.slug}/`}
-              class="block bg-white rounded-lg shadow hover:shadow-lg transition-shadow p-6 hover:no-underline"
-            >
-              <div class="flex items-center gap-2 text-xs text-gray-500 mb-2">
-                <span class="bg-gold-light text-ink px-2 py-0.5 rounded">{post.data.type}</span>
-                <time>{post.data.date.toLocaleDateString('zh-CN')}</time>
-                {post.data.pdfRepo && post.data.pdfPath && (
-                  <span class="bg-primary-light text-primary-dark px-2 py-0.5 rounded">📄 PDF</span>
-                )}
-              </div>
-              <h3 class="text-lg font-bold mb-1 text-ink">{post.data.title}</h3>
-              <p class="text-xs text-gray-400 mb-2">{post.data.issue}</p>
-              <p class="text-gray-600 text-sm line-clamp-2">{post.data.description}</p>
-            </a>
-          ))}
+    {/* 按类型分组展示 */}
+    {typeOrder.map((type) => {
+      const items = grouped[type];
+      if (items.length === 0) return null;
+      return (
+        <div class="mb-10">
+          <h2 class="text-2xl font-bold mb-4 border-l-4 border-gold pl-3 flex items-center gap-2">
+            {type}
+            <span class="text-sm font-normal text-gray-400">（{items.length} 期）</span>
+          </h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {items.map((post) => (
+              <a
+                href={`/journal/${post.slug}/`}
+                class="block bg-white rounded-lg shadow hover:shadow-lg transition-shadow p-6 hover:no-underline"
+              >
+                <div class="flex items-center gap-2 text-xs text-gray-500 mb-2 flex-wrap">
+                  <span class="bg-gold-light text-ink px-2 py-0.5 rounded">{post.data.type}</span>
+                  <time>{post.data.date.toLocaleDateString('zh-CN')}</time>
+                  {post.data.pdfRepo && post.data.pdfPath && (
+                    <span class="bg-primary-light text-primary-dark px-2 py-0.5 rounded">📄 PDF</span>
+                  )}
+                </div>
+                <h3 class="text-lg font-bold mb-1 text-ink">{post.data.title}</h3>
+                <p class="text-xs text-gray-400 mb-2">{post.data.issue}</p>
+                <p class="text-gray-600 text-sm line-clamp-2">{post.data.description}</p>
+              </a>
+            ))}
+          </div>
         </div>
-      </div>
-    )}
+      );
+    })}
 
     {/* 订阅与征稿 */}
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-12">
       <div class="bg-paper-dark rounded-lg p-6">
         <h3 class="text-lg font-bold mb-3 text-ink">📡 订阅通道</h3>
         <ul class="text-sm text-gray-600 space-y-2">
-          <li>邮件订阅：发送至 <code class="bg-white px-2 py-0.5 rounded text-xs">contact@dongfangyuxiao.example.com</code>，标题"订阅周刊"</li>
+          <li>邮件订阅：发送至 <code class="bg-white px-2 py-0.5 rounded text-xs">contact@dongfangyuxiao.example.com</code>，标题"订阅"</li>
           <li>RSS 订阅：<a href="/rss.xml" class="text-primary hover:underline">/rss.xml</a></li>
           <li>Telegram 频道：<code class="bg-white px-2 py-0.5 rounded text-xs">@dongfangyuxiao</code></li>
         </ul>

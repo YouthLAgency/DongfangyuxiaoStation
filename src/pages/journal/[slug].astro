@@ -117,6 +117,9 @@ const pdfBranch = post.data.pdfBranch || 'main';
 {hasPdf && (
   <script is:inline define:vars={{ pdfRepo: post.data.pdfRepo, pdfPath: post.data.pdfPath, pdfBranch }}>
     (function () {
+      const [owner, repo] = pdfRepo.split('/');
+      const rawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/${pdfBranch}/${encodeURIComponent(pdfPath)}`;
+
       const statusEl = document.getElementById('pdf-status');
       const frame = document.getElementById('pdf-frame');
       const tabPdf = document.getElementById('tab-pdf');
@@ -125,33 +128,19 @@ const pdfBranch = post.data.pdfBranch || 'main';
       const textPanel = document.getElementById('text-panel');
       const downloadBtn = document.getElementById('download-pdf-btn');
 
-      let blobUrl = null;
-
-      // 从 GitHub API 获取 PDF（base64 → blob → iframe）
-      async function loadPdf() {
-        try {
-          statusEl.textContent = '加载中…';
-          const [owner, repo] = pdfRepo.split('/');
-          const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${encodeURIComponent(pdfPath)}?ref=${pdfBranch}`;
-          const res = await fetch(apiUrl, {
-            headers: { Accept: 'application/vnd.github.raw' },
-          });
-          if (!res.ok) {
-            throw new Error(`HTTP ${res.status}`);
-          }
-          const blob = await res.blob();
-          blobUrl = URL.createObjectURL(blob);
-          frame.src = blobUrl;
-          statusEl.textContent = '✓ 已加载';
-          statusEl.className = 'text-xs text-green-600';
-        } catch (err) {
-          statusEl.textContent = `✗ 加载失败：${err.message}`;
-          statusEl.className = 'text-xs text-red-600';
-          // 回退方案：用 raw URL 直接嵌入（公开仓库可用）
-          const [owner, repo] = pdfRepo.split('/');
-          frame.src = `https://raw.githubusercontent.com/${owner}/${repo}/${pdfBranch}/${pdfPath}`;
+      // 直接用 raw.githubusercontent.com 嵌入，公开仓库无需 API、无 CORS、不限流
+      frame.src = rawUrl;
+      frame.addEventListener('load', () => {
+        statusEl.textContent = '✓ 已加载';
+        statusEl.className = 'text-xs text-green-600';
+      });
+      // 超时提示
+      setTimeout(() => {
+        if (statusEl.textContent === '加载中…') {
+          statusEl.innerHTML = '加载较慢，可点击 <a href="' + rawUrl + '" target="_blank" class="text-primary hover:underline">此处</a> 直接打开';
+          statusEl.className = 'text-xs text-gray-500';
         }
-      }
+      }, 8000);
 
       // Tab 切换
       tabPdf.addEventListener('click', () => {
@@ -170,22 +159,9 @@ const pdfBranch = post.data.pdfBranch || 'main';
       // 下载 PDF
       if (downloadBtn) {
         downloadBtn.addEventListener('click', () => {
-          if (blobUrl) {
-            const a = document.createElement('a');
-            a.href = blobUrl;
-            a.download = pdfPath.split('/').pop();
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-          } else {
-            // 回退到 raw URL
-            const [owner, repo] = pdfRepo.split('/');
-            window.open(`https://raw.githubusercontent.com/${owner}/${repo}/${pdfBranch}/${pdfPath}`, '_blank');
-          }
+          window.open(rawUrl, '_blank');
         });
       }
-
-      loadPdf();
     })();
   </script>
 )}
