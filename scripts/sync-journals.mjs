@@ -1,14 +1,15 @@
 /**
- * 同步机关刊物仓库 YouthLAgency/ZhenliWeekly 到本地 journals 集合
+ * 同步机关刊物仓库 YouthLAgency/ZhenliWeekly 到本地
  *
  * 用法：
  *   node scripts/sync-journals.mjs           # 执行同步
  *   node scripts/sync-journals.mjs --dry-run # 预览变更
  *
- * 该仓库包含《真理周刊》《真理月刊》两个文件夹，内含 PDF/Markdown 文件。
- * 同步后在 src/content/journals/ 下生成对应元数据条目，PDF 在线阅读指向该仓库。
+ * - PDF 文件下载到 public/journals/<类型>/<文件名>，部署后从 Cloudflare CDN 提供
+ * - journals markdown frontmatter 用 pdfLocal 指向本站路径
+ * - MD 文件内容作为期刊正文
  */
-import { readdir, readFile, writeFile, unlink, mkdir } from 'node:fs/promises';
+import { readdir, readFile, writeFile, unlink, mkdir, rm } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { join, parse } from 'node:path';
 
@@ -16,6 +17,7 @@ const REPO_OWNER = 'YouthLAgency';
 const REPO_NAME = 'ZhenliWeekly';
 const REPO_BRANCH = 'main';
 const JOURNALS_DIR = join(process.cwd(), 'src', 'content', 'journals');
+const PDF_DIR = join(process.cwd(), 'public', 'journals');
 
 const dryRun = process.argv.includes('--dry-run');
 
@@ -27,76 +29,76 @@ async function api(path) {
   return res.json();
 }
 
-// 获取仓库根目录的文件夹列表
+// 下载文件内容
+// - 小文件（<1MB）：GitHub Contents API 返回 base64 content
+// - 大文件（>=1MB）：API 返回 download_url，需用 raw URL 下载
+async function downloadRaw(dirName, filename) {
+  const path = `${encodeURIComponent(dirName)}/${encodeURIComponent(filename)}`;
+  const data = await api(`/repos/${REPO_OWNER}/${REPO_NAME}/contents/${path}?ref=${REPO_BRANCH}`);
+  if (data.encoding === 'base64' && data.content) {
+    return { buffer: Buffer.from(data.content, 'base64') };
+  }
+  // 大文件：用 download_url（raw.githubusercontent.com）
+  const res = await fetch(data.download_url);
+  if (!res.ok) throw new Error(`下载失败 ${res.status}: ${filename}`);
+  const ab = await res.arrayBuffer();
+  return { buffer: Buffer.from(ab) };
+}
+
 async function getTopDirs() {
   const data = await api(`/repos/${REPO_OWNER}/${REPO_NAME}/contents?ref=${REPO_BRANCH}`);
   return data.filter((item) => item.type === 'dir');
 }
 
-// 获取文件夹下的文件
 async function getFiles(dirPath) {
   const data = await api(
     `/repos/${REPO_OWNER}/${REPO_NAME}/contents/${encodeURIComponent(dirPath)}?ref=${REPO_BRANCH}`
   );
   if (!Array.isArray(data)) return [];
-  // 过滤掉说明文档
   const skipNames = new Set(['docs.md', 'readme.md', 'README.md', 'index.md', '.gitkeep']);
   return data.filter((item) => item.type === 'file' && !skipNames.has(item.name));
 }
 
-// 判断期刊类型
 function getJournalType(dirName) {
   const name = dirName.toLowerCase();
   if (name.includes('周刊') || name.includes('weekly')) return '周刊';
   if (name.includes('月刊') || name.includes('monthly')) return '月刊';
+  if (name.includes('文艺') || name.includes('literary')) return '文艺报';
   return '特刊';
 }
 
-// 从文件名提取期号
 function extractIssue(filename) {
   const base = parse(filename).name;
-  // 优先匹配"第X期"或"X期"
   let m = base.match(/第([一二三四五六七八九十百千零\d]+)期/);
   if (m) return `第${m[1]}期`;
   m = base.match(/([一二三四五六七八九十百千零]+)期/);
   if (m) return `第${m[1]}期`;
-  // 匹配数字
   m = base.match(/(\d+)/);
   if (m) return `第${m[1]}期`;
   return base;
 }
 
-// 从文件名推断日期（支持 2026-10-01、20261001、2026年七月、2026年7月）
 function extractDate(filename) {
   const base = parse(filename).name;
-  const cnMonth = {
-    一: 1, 二: 2, 三: 3, 四: 4, 五: 5, 六: 6,
-    七: 7, 八: 8, 九: 9, 十: 10, 十一: 11, 十二: 12,
-  };
-  // YYYY-MM-DD
+  const cnMonth = { 一:1,二:2,三:3,四:4,五:5,六:6,七:7,八:8,九:9,十:10,十一:11,十二:12 };
   let m = base.match(/(\d{4})-(\d{1,2})-(\d{1,2})/);
-  if (m) return `${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}`;
-  // YYYYMMDD
+  if (m) return `${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`;
   m = base.match(/(\d{4})(\d{2})(\d{2})/);
   if (m) return `${m[1]}-${m[2]}-${m[3]}`;
-  // YYYY年MM月（中文或阿拉伯数字）
   m = base.match(/(\d{4})年([一二三四五六七八九十]+|\d{1,2})月/);
   if (m) {
-    let month = m[2];
-    if (cnMonth[month]) month = cnMonth[month];
-    month = String(month).padStart(2, '0');
-    return `${m[1]}-${month}-01`;
+    let mo = m[2];
+    if (cnMonth[mo]) mo = cnMonth[mo];
+    return `${m[1]}-${String(mo).padStart(2,'0')}-01`;
   }
-  // YYYY 单独
   m = base.match(/(\d{4})/);
   if (m) return `${m[1]}-01-01`;
-  // 否则用今天
   return new Date().toISOString().slice(0, 10);
 }
 
-// 生成 slug
 function slugify(dirName, filename) {
-  const type = getJournalType(dirName) === '周刊' ? 'weekly' : 'monthly';
+  const typeMap = { '周刊': 'weekly', '月刊': 'monthly', '文艺报': 'literary', '特刊': 'special' };
+  const type = typeMap[getJournalType(dirName)] || 'monthly';
   const base = parse(filename).name
     .replace(/[\s_]+/g, '-')
     .replace(/[^\w\u4e00-\u9fa5-]/g, '')
@@ -104,13 +106,14 @@ function slugify(dirName, filename) {
   return `${type}-${base}`;
 }
 
-// 生成 frontmatter
-function generateFrontmatter({ dirName, filename, type, date }) {
+// 生成 journals markdown（含正文）
+function generateJournalMd({ dirName, filename, type, date, body }) {
   const issue = extractIssue(filename);
   const title = `${dirName}·${issue}`;
-  const pdfPath = `${dirName}/${filename}`;
-  const isPdf = filename.toLowerCase().endsWith('.pdf');
-  return [
+  const isPdf = /\.pdf$/i.test(filename);
+  const pdfLocal = isPdf ? `/journals/${dirName}/${filename}` : '';
+
+  const fm = [
     '---',
     `title: "${title}"`,
     `issue: "${issue}"`,
@@ -118,40 +121,43 @@ function generateFrontmatter({ dirName, filename, type, date }) {
     `date: ${date}`,
     `type: ${type}`,
     `onlineReadable: true`,
-    `pdfRepo: "${REPO_OWNER}/${REPO_NAME}"`,
-    `pdfPath: "${pdfPath}"`,
-    `pdfBranch: "${REPO_BRANCH}"`,
+  ];
+  if (pdfLocal) fm.push(`pdfLocal: "${pdfLocal}"`);
+  fm.push(
     `tags:`,
     `  - ${type}`,
     `  - 机关刊物`,
     `draft: false`,
     '---',
-    '',
-    `本文为 PDF 在线阅读版，请使用上方 PDF 阅读器浏览完整内容。`,
-  ].join('\n');
+  );
+
+  let content = fm.join('\n');
+  if (body && body.trim()) {
+    content += '\n\n' + body;
+  } else if (isPdf) {
+    content += '\n\n本文为 PDF 在线阅读版，请使用上方 PDF 阅读器浏览完整内容。';
+  }
+  return content;
 }
 
 async function main() {
   console.log(`📡 正在读取 ${REPO_OWNER}/${REPO_NAME} 仓库结构...`);
   const dirs = await getTopDirs();
-  console.log(`发现 ${dirs.length} 个文件夹：${dirs.map((d) => d.name).join(', ')}`);
+  console.log(`发现 ${dirs.length} 个文件夹：${dirs.map((d) => d.name).join('、')}`);
 
-  // 收集所有期刊文件
   const journals = [];
   for (const dir of dirs) {
     const type = getJournalType(dir.name);
     console.log(`\n📁 ${dir.name}（类型：${type}）`);
     const files = await getFiles(dir.name);
-    // 只取 PDF 和 MD
     const docFiles = files.filter((f) => /\.(pdf|md)$/i.test(f.name));
     console.log(`   找到 ${docFiles.length} 个文件`);
     for (const f of docFiles) {
-      const date = extractDate(f.name);
       journals.push({
         dirName: dir.name,
         filename: f.name,
         type,
-        date,
+        date: extractDate(f.name),
         slug: slugify(dir.name, f.name),
       });
       console.log(`   - ${f.name} → ${journals.at(-1).slug}.md`);
@@ -164,47 +170,100 @@ async function main() {
   }
 
   // 确保目录存在
-  if (!existsSync(JOURNALS_DIR)) {
-    await mkdir(JOURNALS_DIR, { recursive: true });
-  }
+  if (!existsSync(JOURNALS_DIR)) await mkdir(JOURNALS_DIR, { recursive: true });
+  if (!existsSync(PDF_DIR)) await mkdir(PDF_DIR, { recursive: true });
 
-  // 获取现有 journals 文件
-  const existingFiles = (await readdir(JOURNALS_DIR)).filter((f) => f.endsWith('.md'));
-  const expectedSlugs = new Set(journals.map((j) => j.slug));
+  // 收集所有预期的 PDF 本地路径（用于清理过期 PDF）
+  const expectedPdfPaths = new Set();
 
-  // 删除不再存在的期刊
-  let deleted = 0;
-  for (const file of existingFiles) {
-    const slug = parse(file).name;
-    if (!expectedSlugs.has(slug)) {
-      console.log(`🗑 删除过期条目：${file}`);
-      if (!dryRun) await unlink(join(JOURNALS_DIR, file));
-      deleted++;
-    }
-  }
+  // 下载 PDF 并写入 journals
+  let created = 0, updated = 0, downloaded = 0;
 
-  // 写入/更新期刊
-  let created = 0;
-  let updated = 0;
   for (const j of journals) {
-    const filePath = join(JOURNALS_DIR, `${j.slug}.md`);
-    const newContent = generateFrontmatter(j);
+    const isPdf = /\.pdf$/i.test(j.filename);
+    let body = '';
+
+    if (isPdf) {
+      // 下载 PDF 到 public/journals/<dirName>/<filename>
+      const localDir = join(PDF_DIR, j.dirName);
+      if (!existsSync(localDir)) await mkdir(localDir, { recursive: true });
+      const localPath = join(localDir, j.filename);
+      const pdfUrl = `/journals/${j.dirName}/${j.filename}`;
+      expectedPdfPaths.add(pdfUrl);
+
+      // 检查是否已存在且大小一致（避免重复下载）
+      const { buffer } = await downloadRaw(j.dirName, j.filename);
+      const buf = buffer;
+      if (!existsSync(localPath) || readFileSyncSafe(localPath)?.length !== buf.length) {
+        console.log(`⬇ 下载 PDF：${j.filename}（${(buf.length/1024).toFixed(1)} KB）`);
+        if (!dryRun) await writeFile(localPath, buf);
+        downloaded++;
+      } else {
+        console.log(`⏭ PDF 已存在：${j.filename}`);
+      }
+    } else {
+      // MD 文件：下载内容作为正文
+      const { buffer } = await downloadRaw(j.dirName, j.filename);
+      body = buffer.toString('utf-8');
+    }
+
+    // 写入 journals markdown
+    const mdPath = join(JOURNALS_DIR, `${j.slug}.md`);
+    const newContent = generateJournalMd({ ...j, body });
     let isNew = true;
-    if (existsSync(filePath)) {
-      const oldContent = await readFile(filePath, 'utf-8');
-      if (oldContent === newContent) {
+    if (existsSync(mdPath)) {
+      const old = await readFile(mdPath, 'utf-8');
+      if (old === newContent) {
         console.log(`⏭ 无变化：${j.slug}.md`);
         continue;
       }
       isNew = false;
     }
     console.log(`${isNew ? '✨ 新增' : '✏ 更新'}：${j.slug}.md`);
-    if (!dryRun) await writeFile(filePath, newContent, 'utf-8');
+    if (!dryRun) await writeFile(mdPath, newContent, 'utf-8');
     if (isNew) created++;
     else updated++;
   }
 
-  console.log(`\n✅ 同步完成：新增 ${created}，更新 ${updated}，删除 ${deleted}${dryRun ? '（dry-run，未实际写入）' : ''}`);
+  // 清理过期 journals markdown
+  const existingMd = (await readdir(JOURNALS_DIR)).filter((f) => f.endsWith('.md'));
+  const expectedSlugs = new Set(journals.map((j) => j.slug));
+  let deleted = 0;
+  for (const f of existingMd) {
+    if (!expectedSlugs.has(parse(f).name)) {
+      console.log(`🗑 删除过期条目：${f}`);
+      if (!dryRun) await unlink(join(JOURNALS_DIR, f));
+      deleted++;
+    }
+  }
+
+  // 清理过期 PDF
+  for (const dir of dirs) {
+    const localDir = join(PDF_DIR, dir.name);
+    if (!existsSync(localDir)) continue;
+    const localFiles = await readdir(localDir);
+    const expectedInDir = new Set(
+      journals.filter((j) => j.dirName === dir.name && /\.pdf$/i.test(j.filename)).map((j) => j.filename)
+    );
+    for (const f of localFiles) {
+      if (!expectedInDir.has(f)) {
+        console.log(`🗑 删除过期 PDF：${dir.name}/${f}`);
+        if (!dryRun) await unlink(join(localDir, f));
+      }
+    }
+  }
+
+  console.log(`\n✅ 同步完成：新增 ${created}，更新 ${updated}，下载 ${downloaded}，删除 ${deleted}${dryRun ? '（dry-run）' : ''}`);
+}
+
+// 安全读取文件大小
+function readFileSyncSafe(p) {
+  try {
+    const { readFileSync } = require('fs');
+    return readFileSync(p);
+  } catch {
+    return null;
+  }
 }
 
 main().catch((err) => {

@@ -17,8 +17,7 @@ const toc = headings
   .filter((h) => h.depth === 2 || h.depth === 3)
   .map((h) => ({ text: h.text, depth: h.depth, slug: h.slug }));
 
-const hasPdf = !!(post.data.pdfRepo && post.data.pdfPath);
-const pdfBranch = post.data.pdfBranch || 'main';
+const hasPdf = !!post.data.pdfLocal;
 ---
 
 <ReaderLayout
@@ -115,10 +114,10 @@ const pdfBranch = post.data.pdfBranch || 'main';
 </ReaderLayout>
 
 {hasPdf && (
-  <script is:inline define:vars={{ pdfRepo: post.data.pdfRepo, pdfPath: post.data.pdfPath, pdfBranch }}>
+  <script is:inline define:vars={{ pdfLocal: post.data.pdfLocal }}>
     (function () {
-      const [owner, repo] = pdfRepo.split('/');
-      const rawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/${pdfBranch}/${encodeURIComponent(pdfPath)}`;
+      // PDF 从本站 Cloudflare CDN 提供，Content-Type: application/pdf，浏览器内嵌预览
+      const pdfUrl = pdfLocal;
 
       const statusEl = document.getElementById('pdf-status');
       const frame = document.getElementById('pdf-frame');
@@ -128,21 +127,18 @@ const pdfBranch = post.data.pdfBranch || 'main';
       const textPanel = document.getElementById('text-panel');
       const downloadBtn = document.getElementById('download-pdf-btn');
 
-      // 直接用 raw.githubusercontent.com 嵌入，公开仓库无需 API、无 CORS、不限流
-      frame.src = rawUrl;
+      frame.src = pdfUrl;
       frame.addEventListener('load', () => {
         statusEl.textContent = '✓ 已加载';
         statusEl.className = 'text-xs text-green-600';
       });
-      // 超时提示
       setTimeout(() => {
         if (statusEl.textContent === '加载中…') {
-          statusEl.innerHTML = '加载较慢，可点击 <a href="' + rawUrl + '" target="_blank" class="text-primary hover:underline">此处</a> 直接打开';
+          statusEl.innerHTML = '加载较慢，可点击 <a href="' + pdfUrl + '" target="_blank" class="text-primary hover:underline">此处</a> 直接打开';
           statusEl.className = 'text-xs text-gray-500';
         }
       }, 8000);
 
-      // Tab 切换
       tabPdf.addEventListener('click', () => {
         tabPdf.className = 'px-4 py-2 bg-primary text-white rounded text-sm font-semibold';
         tabText.className = 'px-4 py-2 border border-gray-300 text-ink rounded text-sm hover:bg-paper-dark';
@@ -156,10 +152,9 @@ const pdfBranch = post.data.pdfBranch || 'main';
         pdfPanel.classList.add('hidden');
       });
 
-      // 下载 PDF
       if (downloadBtn) {
         downloadBtn.addEventListener('click', () => {
-          window.open(rawUrl, '_blank');
+          window.open(pdfUrl, '_blank');
         });
       }
     })();

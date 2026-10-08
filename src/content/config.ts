@@ -73,13 +73,9 @@ const journals = defineCollection({
       downloadUrl: z.string().optional(),
       // 是否开放在线阅读
       onlineReadable: z.boolean().default(true),
-      // PDF 在线阅读：从 GitHub 仓库读取 PDF 文件
-      // pdfRepo 格式：owner/repo，如 YouthAgency/DongfangyuxiaoStation
-      pdfRepo: z.string().optional(),
-      // PDF 在仓库中的路径，如 journals/2026-issue-01.pdf
-      pdfPath: z.string().optional(),
-      // PDF 所在分支，默认 main
-      pdfBranch: z.string().default('main'),
+      // PDF 本地路径（同步脚本下载到 public/journals/，部署后从 Cloudflare CDN 提供）
+      // 如 /journals/月刊/2026年七月第三期.pdf
+      pdfLocal: z.string().optional(),
       tags: z.array(z.string()).default([]),
       draft: z.boolean().default(false),
     }),

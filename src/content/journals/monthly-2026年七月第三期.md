@@ -5,9 +5,7 @@ description: "月刊第三期——机关刊物电子版。"
 date: 2026-07-01
 type: 月刊
 onlineReadable: true
-pdfRepo: "YouthLAgency/ZhenliWeekly"
-pdfPath: "月刊/2026年七月第三期.pdf"
-pdfBranch: "main"
+pdfLocal: "/journals/月刊/2026年七月第三期.pdf"
 tags:
   - 月刊
   - 机关刊物

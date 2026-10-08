@@ -5,9 +5,7 @@ description: "月刊第一期——机关刊物电子版。"
 date: 2026-04-01
 type: 月刊
 onlineReadable: true
-pdfRepo: "YouthLAgency/ZhenliWeekly"
-pdfPath: "月刊/2026年四月第一期.pdf"
-pdfBranch: "main"
+pdfLocal: "/journals/月刊/2026年四月第一期.pdf"
 tags:
   - 月刊
   - 机关刊物

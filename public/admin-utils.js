@@ -96,11 +96,11 @@
       return { content, sha: data.sha };
     },
     // 创建或更新文件
-    async putFile(path, content, message, sha) {
+    async putFile(path, content, message, sha, isBase64 = false) {
       const cfg = this.getConfig();
       const body = {
         message,
-        content: btoa(unescape(encodeURIComponent(content))),
+        content: isBase64 ? content : btoa(unescape(encodeURIComponent(content))),
         branch: cfg.branch,
       };
       if (sha) body.sha = sha;
@@ -320,9 +320,7 @@
         },
         { name: 'downloadUrl', label: '下载链接（外链，可选）', type: 'url', optional: true },
         { name: 'onlineReadable', label: '开放在线阅读', type: 'boolean', default: true },
-        { name: 'pdfRepo', label: 'PDF 仓库（owner/repo，可选）', type: 'string', optional: true },
-        { name: 'pdfPath', label: 'PDF 仓库路径（可选）', type: 'string', optional: true },
-        { name: 'pdfBranch', label: 'PDF 分支', type: 'string', default: 'main' },
+        { name: 'pdfLocal', label: 'PDF 本地路径（如 /journals/月刊/xxx.pdf，可选）', type: 'string', optional: true },
         { name: 'tags', label: '标签（逗号分隔）', type: 'tags' },
         { name: 'draft', label: '草稿', type: 'boolean', default: false },
       ],

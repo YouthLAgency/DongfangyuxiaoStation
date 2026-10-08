@@ -261,9 +261,10 @@ const { collection } = Astro.params;
     function generateMd(dirName, filename, type) {
       const issue = extractIssue(filename);
       const title = `${dirName}·${issue}`;
-      const pdfPath = `${dirName}/${filename}`;
+      const isPdf = /\.pdf$/i.test(filename);
+      const pdfLocal = isPdf ? `/journals/${dirName}/${filename}` : '';
       const date = extractDate(filename);
-      return [
+      const fm = [
         '---',
         `title: "${title}"`,
         `issue: "${issue}"`,
@@ -271,17 +272,18 @@ const { collection } = Astro.params;
         `date: ${date}`,
         `type: ${type}`,
         `onlineReadable: true`,
-        `pdfRepo: "YouthLAgency/ZhenliWeekly"`,
-        `pdfPath: "${pdfPath}"`,
-        `pdfBranch: "main"`,
+      ];
+      if (pdfLocal) fm.push(`pdfLocal: "${pdfLocal}"`);
+      fm.push(
         `tags:`,
         `  - ${type}`,
         `  - 机关刊物`,
         `draft: false`,
         '---',
         '',
-        `本文为 PDF 在线阅读版，请使用上方 PDF 阅读器浏览完整内容。`,
-      ].join('\n');
+        isPdf ? `本文为 PDF 在线阅读版，请使用上方 PDF 阅读器浏览完整内容。` : '',
+      );
+      return fm.join('\n');
     }
 
     syncBtn.addEventListener('click', async () => {
@@ -334,9 +336,35 @@ const { collection } = Astro.params;
           }
         }
 
-        // 写入/更新
+        // 写入/更新（先上传 PDF，再写 markdown）
         let created = 0, updated = 0;
         for (const item of items) {
+          const isPdf = /\.pdf$/i.test(item.filename);
+
+          // 上传 PDF 到 public/journals/
+          if (isPdf) {
+            const pdfPath = `public/journals/${item.dirName}/${item.filename}`;
+            const rawUrl = `https://raw.githubusercontent.com/YouthLAgency/ZhenliWeekly/main/${encodeURIComponent(item.dirName)}/${encodeURIComponent(item.filename)}`;
+            try {
+              const blob = await fetch(rawUrl).then((r) => r.blob());
+              const reader = new FileReader();
+              const base64 = await new Promise((resolve) => {
+                reader.onload = () => resolve(reader.result.split(',')[1]);
+                reader.readAsDataURL(blob);
+              });
+              let pdfSha = null;
+              try {
+                const r = await GitHub.getFile(pdfPath);
+                pdfSha = r.sha;
+              } catch (e) { /* 不存在 */ }
+              await GitHub.putFile(pdfPath, base64, `同步期刊 PDF ${item.filename}`, pdfSha, true);
+              log(`⬆ 上传 PDF：${item.filename}`);
+            } catch (e) {
+              log(`✗ PDF 上传失败：${item.filename}（${e.message}）`, true);
+            }
+          }
+
+          // 写入 journals markdown
           const path = `src/content/journals/${item.slug}.md`;
           const md = generateMd(item.dirName, item.filename, item.type);
           let sha = null;
@@ -347,9 +375,7 @@ const { collection } = Astro.params;
               log(`⏭ 无变化：${item.slug}.md`);
               continue;
             }
-          } catch (e) {
-            // 文件不存在，新增
-          }
+          } catch (e) { /* 新增 */ }
           const isNew = !sha;
           await GitHub.putFile(path, md, `${isNew ? '新增' : '更新'}期刊 ${item.slug}.md`, sha);
           log(`${isNew ? '✨ 新增' : '✏ 更新'}：${item.slug}.md`);
