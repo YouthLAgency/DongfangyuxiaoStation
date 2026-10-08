@@ -20,14 +20,29 @@ const { collection } = Astro.params;
         </p>
         <h1 id="page-title" class="text-3xl font-bold text-ink">加载中…</h1>
       </div>
-      <a
-        id="new-btn"
-        href={`/admin/${collection}/new`}
-        class="px-5 py-2 bg-primary text-white rounded hover:opacity-90 text-sm hover:no-underline"
-      >
-        + 新增
-      </a>
+      <div class="flex items-center gap-3">
+        {collection === 'journals' && (
+          <button
+            type="button"
+            id="sync-btn"
+            class="px-5 py-2 bg-gold text-ink rounded hover:opacity-90 text-sm font-semibold"
+          >
+            🔄 从仓库同步
+          </button>
+        )}
+        <a
+          id="new-btn"
+          href={`/admin/${collection}/new`}
+          class="px-5 py-2 bg-primary text-white rounded hover:opacity-90 text-sm hover:no-underline"
+        >
+          + 新增
+        </a>
+      </div>
     </div>
+
+    {collection === 'journals' && (
+      <div id="sync-status" class="hidden mb-4 p-4 rounded-lg bg-paper-dark text-sm"></div>
+    )}
 
     <!-- 搜索框 -->
     <div class="mb-4">
@@ -188,6 +203,170 @@ const { collection } = Astro.params;
     });
     renderList(filtered);
   });
+
+  // ========== 刊物仓库同步 ==========
+  const syncBtn = document.getElementById('sync-btn');
+  const syncStatus = document.getElementById('sync-status');
+
+  if (syncBtn) {
+    function log(msg, isError) {
+      syncStatus.classList.remove('hidden');
+      syncStatus.innerHTML += `<div class="${isError ? 'text-red-600' : 'text-ink'}">${msg}</div>`;
+    }
+
+    function getJournalType(dirName) {
+      const n = dirName.toLowerCase();
+      if (n.includes('周刊') || n.includes('weekly')) return '周刊';
+      if (n.includes('月刊') || n.includes('monthly')) return '月刊';
+      return '特刊';
+    }
+
+    function extractIssue(filename) {
+      const base = filename.replace(/\.[^.]+$/, '');
+      let m = base.match(/第([一二三四五六七八九十百千零\d]+)期/);
+      if (m) return `第${m[1]}期`;
+      m = base.match(/([一二三四五六七八九十百千零]+)期/);
+      if (m) return `第${m[1]}期`;
+      m = base.match(/(\d+)/);
+      return m ? `第${m[1]}期` : base;
+    }
+
+    function extractDate(filename) {
+      const base = filename.replace(/\.[^.]+$/, '');
+      const cnMonth = { 一:1,二:2,三:3,四:4,五:5,六:6,七:7,八:8,九:9,十:10,十一:11,十二:12 };
+      let m = base.match(/(\d{4})-(\d{1,2})-(\d{1,2})/);
+      if (m) return `${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`;
+      m = base.match(/(\d{4})(\d{2})(\d{2})/);
+      if (m) return `${m[1]}-${m[2]}-${m[3]}`;
+      m = base.match(/(\d{4})年([一二三四五六七八九十]+|\d{1,2})月/);
+      if (m) {
+        let mo = m[2];
+        if (cnMonth[mo]) mo = cnMonth[mo];
+        return `${m[1]}-${String(mo).padStart(2,'0')}-01`;
+      }
+      m = base.match(/(\d{4})/);
+      if (m) return `${m[1]}-01-01`;
+      return new Date().toISOString().slice(0, 10);
+    }
+
+    function slugify(dirName, filename) {
+      const type = getJournalType(dirName) === '周刊' ? 'weekly' : 'monthly';
+      const base = filename.replace(/\.[^.]+$/, '')
+        .replace(/[\s_]+/g, '-')
+        .replace(/[^\w\u4e00-\u9fa5-]/g, '')
+        .toLowerCase();
+      return `${type}-${base}`;
+    }
+
+    function generateMd(dirName, filename, type) {
+      const issue = extractIssue(filename);
+      const title = `${dirName}·${issue}`;
+      const pdfPath = `${dirName}/${filename}`;
+      const date = extractDate(filename);
+      return [
+        '---',
+        `title: "${title}"`,
+        `issue: "${issue}"`,
+        `description: "${dirName}${issue}——机关刊物电子版。"`,
+        `date: ${date}`,
+        `type: ${type}`,
+        `onlineReadable: true`,
+        `pdfRepo: "YouthLAgency/ZhenliWeekly"`,
+        `pdfPath: "${pdfPath}"`,
+        `pdfBranch: "main"`,
+        `tags:`,
+        `  - ${type}`,
+        `  - 机关刊物`,
+        `draft: false`,
+        '---',
+        '',
+        `本文为 PDF 在线阅读版，请使用上方 PDF 阅读器浏览完整内容。`,
+      ].join('\n');
+    }
+
+    syncBtn.addEventListener('click', async () => {
+      if (!GitHub.isConfigured()) {
+        alert('请先在设置页配置 GitHub 仓库信息');
+        return;
+      }
+      syncStatus.classList.remove('hidden');
+      syncStatus.innerHTML = '';
+      syncBtn.disabled = true;
+      syncBtn.textContent = '同步中…';
+
+      try {
+        log('📡 正在读取 ZhenliWeekly 仓库结构…');
+        const rootRes = await fetch('https://api.github.com/repos/YouthLAgency/ZhenliWeekly/contents?ref=main');
+        if (!rootRes.ok) throw new Error(`HTTP ${rootRes.status}`);
+        const dirs = (await rootRes.json()).filter((i) => i.type === 'dir');
+        log(`发现 ${dirs.length} 个文件夹：${dirs.map((d) => d.name).join('、')}`);
+
+        // 收集所有期刊文件
+        const items = [];
+        for (const dir of dirs) {
+          const type = getJournalType(dir.name);
+          const filesRes = await fetch(`https://api.github.com/repos/YouthLAgency/ZhenliWeekly/contents/${encodeURIComponent(dir.name)}?ref=main`);
+          const files = await filesRes.json();
+          const skipNames = new Set(['docs.md', 'readme.md', 'README.md', 'index.md', '.gitkeep']);
+          const docs = files.filter((f) => f.type === 'file' && /\.(pdf|md)$/i.test(f.name) && !skipNames.has(f.name));
+          log(`📁 ${dir.name}（${type}）：${docs.length} 个文件`);
+          for (const f of docs) {
+            items.push({ dirName: dir.name, filename: f.name, type, slug: slugify(dir.name, f.name) });
+          }
+        }
+
+        if (items.length === 0) {
+          log('⚠ 未找到期刊文件');
+          return;
+        }
+
+        // 获取现有 journals 文件
+        const existing = await GitHub.listFiles('src/content/journals');
+        const existingNames = new Set(existing.map((f) => f.name));
+        const expectedNames = new Set(items.map((i) => `${i.slug}.md`));
+
+        // 删除过期
+        for (const f of existing) {
+          if (!expectedNames.has(f.name)) {
+            log(`🗑 删除过期：${f.name}`);
+            const { sha } = await GitHub.getFile(`src/content/journals/${f.name}`);
+            await GitHub.deleteFile(`src/content/journals/${f.name}`, sha, `同步删除过期期刊 ${f.name}`);
+          }
+        }
+
+        // 写入/更新
+        let created = 0, updated = 0;
+        for (const item of items) {
+          const path = `src/content/journals/${item.slug}.md`;
+          const md = generateMd(item.dirName, item.filename, item.type);
+          let sha = null;
+          try {
+            const r = await GitHub.getFile(path);
+            sha = r.sha;
+            if (r.content === md) {
+              log(`⏭ 无变化：${item.slug}.md`);
+              continue;
+            }
+          } catch (e) {
+            // 文件不存在，新增
+          }
+          const isNew = !sha;
+          await GitHub.putFile(path, md, `${isNew ? '新增' : '更新'}期刊 ${item.slug}.md`, sha);
+          log(`${isNew ? '✨ 新增' : '✏ 更新'}：${item.slug}.md`);
+          if (isNew) created++;
+          else updated++;
+        }
+
+        log(`✅ 同步完成：新增 ${created}，更新 ${updated}`);
+        loadFiles();
+      } catch (err) {
+        log(`❌ 同步失败：${err.message}`, true);
+      } finally {
+        syncBtn.disabled = false;
+        syncBtn.textContent = '🔄 从仓库同步';
+      }
+    });
+  }
 
   loadFiles();
 })();
