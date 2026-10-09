@@ -29,20 +29,33 @@ async function api(path) {
   return res.json();
 }
 
+// 带重试的 API 请求
+async function apiWithRetry(path, retries = 3) {
+  let lastErr;
+  for (let i = 0; i < retries; i++) {
+    try {
+      return await api(path);
+    } catch (err) {
+      lastErr = err;
+      console.log(`   ⏳ 重试 ${i + 1}/${retries}：${path.split('?')[0]}`);
+      await new Promise((r) => setTimeout(r, 1000 * (i + 1)));
+    }
+  }
+  throw lastErr;
+}
+
 // 下载文件内容
-// - 小文件（<1MB）：GitHub Contents API 返回 base64 content
-// - 大文件（>=1MB）：API 返回 download_url，需用 raw URL 下载
+// - 小文件（<1MB）：Contents API 返回 base64 content
+// - 大文件（>=1MB）：用 Git Blobs API 获取 base64 content（走 api.github.com，比 raw URL 稳定）
 async function downloadRaw(dirName, filename) {
   const path = `${encodeURIComponent(dirName)}/${encodeURIComponent(filename)}`;
-  const data = await api(`/repos/${REPO_OWNER}/${REPO_NAME}/contents/${path}?ref=${REPO_BRANCH}`);
+  const data = await apiWithRetry(`/repos/${REPO_OWNER}/${REPO_NAME}/contents/${path}?ref=${REPO_BRANCH}`);
   if (data.encoding === 'base64' && data.content) {
     return { buffer: Buffer.from(data.content, 'base64') };
   }
-  // 大文件：用 download_url（raw.githubusercontent.com）
-  const res = await fetch(data.download_url);
-  if (!res.ok) throw new Error(`下载失败 ${res.status}: ${filename}`);
-  const ab = await res.arrayBuffer();
-  return { buffer: Buffer.from(ab) };
+  // 大文件：用 Git Blobs API
+  const blob = await apiWithRetry(`/repos/${REPO_OWNER}/${REPO_NAME}/git/blobs/${data.sha}`);
+  return { buffer: Buffer.from(blob.content, 'base64') };
 }
 
 async function getTopDirs() {
@@ -177,52 +190,57 @@ async function main() {
   const expectedPdfPaths = new Set();
 
   // 下载 PDF 并写入 journals
-  let created = 0, updated = 0, downloaded = 0;
+  let created = 0, updated = 0, downloaded = 0, failed = 0;
 
   for (const j of journals) {
-    const isPdf = /\.pdf$/i.test(j.filename);
-    let body = '';
+    try {
+      const isPdf = /\.pdf$/i.test(j.filename);
+      let body = '';
 
-    if (isPdf) {
-      // 下载 PDF 到 public/journals/<dirName>/<filename>
-      const localDir = join(PDF_DIR, j.dirName);
-      if (!existsSync(localDir)) await mkdir(localDir, { recursive: true });
-      const localPath = join(localDir, j.filename);
-      const pdfUrl = `/journals/${j.dirName}/${j.filename}`;
-      expectedPdfPaths.add(pdfUrl);
+      if (isPdf) {
+        // 下载 PDF 到 public/journals/<dirName>/<filename>
+        const localDir = join(PDF_DIR, j.dirName);
+        if (!existsSync(localDir)) await mkdir(localDir, { recursive: true });
+        const localPath = join(localDir, j.filename);
+        const pdfUrl = `/journals/${j.dirName}/${j.filename}`;
+        expectedPdfPaths.add(pdfUrl);
 
-      // 检查是否已存在且大小一致（避免重复下载）
-      const { buffer } = await downloadRaw(j.dirName, j.filename);
-      const buf = buffer;
-      if (!existsSync(localPath) || readFileSyncSafe(localPath)?.length !== buf.length) {
-        console.log(`⬇ 下载 PDF：${j.filename}（${(buf.length/1024).toFixed(1)} KB）`);
-        if (!dryRun) await writeFile(localPath, buf);
-        downloaded++;
+        // 检查是否已存在且大小一致（避免重复下载）
+        const { buffer } = await downloadRaw(j.dirName, j.filename);
+        const buf = buffer;
+        if (!existsSync(localPath) || readFileSyncSafe(localPath)?.length !== buf.length) {
+          console.log(`⬇ 下载 PDF：${j.filename}（${(buf.length/1024).toFixed(1)} KB）`);
+          if (!dryRun) await writeFile(localPath, buf);
+          downloaded++;
+        } else {
+          console.log(`⏭ PDF 已存在：${j.filename}`);
+        }
       } else {
-        console.log(`⏭ PDF 已存在：${j.filename}`);
+        // MD 文件：下载内容作为正文
+        const { buffer } = await downloadRaw(j.dirName, j.filename);
+        body = buffer.toString('utf-8');
       }
-    } else {
-      // MD 文件：下载内容作为正文
-      const { buffer } = await downloadRaw(j.dirName, j.filename);
-      body = buffer.toString('utf-8');
-    }
 
-    // 写入 journals markdown
-    const mdPath = join(JOURNALS_DIR, `${j.slug}.md`);
-    const newContent = generateJournalMd({ ...j, body });
-    let isNew = true;
-    if (existsSync(mdPath)) {
-      const old = await readFile(mdPath, 'utf-8');
-      if (old === newContent) {
-        console.log(`⏭ 无变化：${j.slug}.md`);
-        continue;
+      // 写入 journals markdown
+      const mdPath = join(JOURNALS_DIR, `${j.slug}.md`);
+      const newContent = generateJournalMd({ ...j, body });
+      let isNew = true;
+      if (existsSync(mdPath)) {
+        const old = await readFile(mdPath, 'utf-8');
+        if (old === newContent) {
+          console.log(`⏭ 无变化：${j.slug}.md`);
+          continue;
+        }
+        isNew = false;
       }
-      isNew = false;
+      console.log(`${isNew ? '✨ 新增' : '✏ 更新'}：${j.slug}.md`);
+      if (!dryRun) await writeFile(mdPath, newContent, 'utf-8');
+      if (isNew) created++;
+      else updated++;
+    } catch (err) {
+      console.log(`✗ 跳过 ${j.filename}：${err.message}`);
+      failed++;
     }
-    console.log(`${isNew ? '✨ 新增' : '✏ 更新'}：${j.slug}.md`);
-    if (!dryRun) await writeFile(mdPath, newContent, 'utf-8');
-    if (isNew) created++;
-    else updated++;
   }
 
   // 清理过期 journals markdown
@@ -253,7 +271,7 @@ async function main() {
     }
   }
 
-  console.log(`\n✅ 同步完成：新增 ${created}，更新 ${updated}，下载 ${downloaded}，删除 ${deleted}${dryRun ? '（dry-run）' : ''}`);
+  console.log(`\n✅ 同步完成：新增 ${created}，更新 ${updated}，下载 ${downloaded}，删除 ${deleted}，失败 ${failed}${dryRun ? '（dry-run）' : ''}`);
 }
 
 // 安全读取文件大小
