@@ -2,9 +2,65 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { getCollection } from 'astro:content';
 
-const allJournals = (await getCollection('journals', ({ data }) => !data.draft)).sort(
-  (a, b) => b.data.date.valueOf() - a.data.date.valueOf()
-);
+// 解析期号为数字（支持"第3期"、"第三期"、"第二十一期"等）
+function parseIssueNumber(issue: string): number {
+  if (!issue) return 0;
+  const cnDigit: Record<string, number> = {
+    零: 0, 一: 1, 二: 2, 三: 3, 四: 4, 五: 5,
+    六: 6, 七: 7, 八: 8, 九: 9, 十: 10,
+  };
+  // 阿拉伯数字
+  let m = issue.match(/第\s*(\d+)\s*期/);
+  if (m) return parseInt(m[1], 10);
+  // 中文数字（简单形式：十、十一、二十、二十一、一百零一等）
+  m = issue.match(/第\s*([零一二三四五六七八九十百千]+)\s*期/);
+  if (m) {
+    const s = m[1];
+    if (s === '十') return 10;
+    // 处理"十X" → 1X
+    if (s.startsWith('十')) return 10 + (cnDigit[s[1]] || 0);
+    // 处理"X十" → X0
+    if (s.endsWith('十') && s.length === 2) return (cnDigit[s[0]] || 0) * 10;
+    // 处理"X十Y" → XY
+    const tens = s.match(/^([一二三四五六七八九])十([一二三四五六七八九])?$/);
+    if (tens) return (cnDigit[tens[1]] || 0) * 10 + (tens[2] ? cnDigit[tens[2]] : 0);
+    // 单个数字
+    if (s.length === 1) return cnDigit[s] || 0;
+    // 复杂情况尝试逐位
+    let result = 0;
+    let current = 0;
+    for (const ch of s) {
+      if (ch === '十') {
+        current = current || 1;
+        result += current * 10;
+        current = 0;
+      } else if (ch === '百') {
+        current = current || 1;
+        result += current * 100;
+        current = 0;
+      } else if (ch === '千') {
+        current = current || 1;
+        result += current * 1000;
+        current = 0;
+      } else if (cnDigit[ch] !== undefined) {
+        current = cnDigit[ch];
+      }
+    }
+    return result + current;
+  }
+  return 0;
+}
+
+const allJournalsRaw = await getCollection('journals', ({ data }) => !data.draft);
+
+// 按期号倒序排列（最新一期在前）
+const allJournals = allJournalsRaw.sort((a, b) => {
+  const na = parseIssueNumber(a.data.issue);
+  const nb = parseIssueNumber(b.data.issue);
+  if (nb !== na) return nb - na;
+  // 期号相同时按日期倒序
+  return b.data.date.valueOf() - a.data.date.valueOf();
+});
 
 // 按类型分组
 const typeOrder = ['周刊', '月刊', '文艺报', '特刊'];
