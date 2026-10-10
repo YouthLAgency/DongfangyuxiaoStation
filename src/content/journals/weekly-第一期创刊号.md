@@ -2,7 +2,7 @@
 title: "周刊·第一期"
 issue: "第一期"
 description: "周刊第一期——机关刊物电子版。"
-date: 2026-10-09
+date: 2026-10-10
 type: 周刊
 onlineReadable: true
 pdfLocal: "/journals/周刊/第一期（创刊号）.pdf"
