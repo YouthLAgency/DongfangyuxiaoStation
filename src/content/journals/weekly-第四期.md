@@ -2,7 +2,7 @@
 title: "周刊·第四期"
 issue: "第四期"
 description: "周刊第四期——机关刊物电子版。"
-date: 2026-10-25
+date: 2026-10-26
 type: 周刊
 onlineReadable: true
 pdfLocal: "/journals/周刊/第四期.pdf"
